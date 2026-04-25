@@ -1,0 +1,56 @@
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/context/language-context";
+import { Play } from "lucide-react";
+import { toast } from '@/hooks/use-toast';
+
+export function AdDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
+  const { t, language } = useLanguage();
+  const [isAdLoading, setIsAdLoading] = useState(false);
+
+  const handleWatchAd = () => {
+    setIsAdLoading(true);
+    setTimeout(() => {
+      setIsAdLoading(false);
+      onOpenChange(false);
+      toast({
+        title: language === 'RU' ? "Профиль открыт!" : "Profile unlocked!",
+        description: language === 'RU' ? "Вы получили 1 бесплатный просмотр лайка за рекламу." : "You got 1 free like view for watching an ad.",
+      });
+    }, 3000);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[320px] rounded-[2.5rem] p-8 text-center bg-white app-shadow border-0">
+        <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 relative">
+          <div className="absolute inset-0 rounded-2xl bg-primary/5 animate-ping"></div>
+          <Play size={32} className="text-primary ml-1 relative z-10" fill="currentColor" />
+        </div>
+        <DialogTitle className="text-xl font-black mb-2 font-headline tracking-tighter uppercase">{t('activity.unlock_title')}</DialogTitle>
+        <DialogDescription className="text-muted-foreground text-xs mb-8 leading-relaxed font-medium">
+          {t('activity.unlock_desc')}
+        </DialogDescription>
+        
+        <div className="flex flex-col gap-3">
+          <Button 
+            onClick={handleWatchAd}
+            disabled={isAdLoading}
+            className="w-full h-14 rounded-full gradient-bg text-white font-black uppercase tracking-widest shadow-xl shadow-primary/20 text-[10px] border-0"
+          >
+            {isAdLoading ? (language === 'RU' ? "Загрузка..." : "Loading...") : t('button.watch')}
+          </Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-full text-muted-foreground text-[9px] font-black uppercase tracking-widest h-10">
+            {t('button.not_now')}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

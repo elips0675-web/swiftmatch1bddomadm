@@ -1,0 +1,131 @@
+
+import { useState, useEffect } from 'react';
+
+// Определяем общие типы для API-хука
+interface UseApiOptions {
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  body?: any; // Тело запроса
+  skip?: boolean; // Пропустить ли выполнение запроса
+}
+
+interface UseApiState<T> {
+  data: T | null;
+  loading: boolean;
+  error: string | null;
+  refetch: () => void; // Функция для повторного выполнения запроса
+}
+
+/**
+ * Кастомный хук для выполнения запросов к API.
+ * @param path - Путь к эндпоинту API (например, '/api/profile/me').
+ * @param options - Опции запроса (метод, тело).
+ */
+export function useApi<T>(path: string, options: UseApiOptions = {}): UseApiState<T> {
+  const { method = 'GET', body, skip = false } = options;
+
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(!skip);
+  const [error, setError] = useState<string | null>(null);
+  const [trigger, setTrigger] = useState(0); // Состояние для перезапуска эффекта
+
+  const refetch = () => setTrigger(prev => prev + 1);
+
+  useEffect(() => {
+    if (skip) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setError('No authentication token found.');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(path, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: body ? JSON.stringify(body) : null,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          setData(result);
+        } else {
+          const errorResult = await response.json();
+          setError(errorResult.message || 'API request failed');
+        }
+      } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unexpected error occurred.';
+        setError(errorMessage);
+        console.error(`API call to ${path} failed:`, e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [path, method, JSON.stringify(body), skip, trigger]); // Зависимость от строкового представления body
+
+  return { data, loading, error, refetch };
+}
+
+/**
+ * Хук для выполнения мутаций (POST, PUT, DELETE).
+ */
+export function useApiMutation<T, TBody = any>() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<T | null>(null);
+
+  const mutate = async (path: string, method: 'POST' | 'PUT' | 'DELETE', body: TBody): Promise<T> => {
+    setLoading(true);
+    setError(null);
+    setData(null);
+
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      setError('No authentication token found.');
+      setLoading(false);
+      throw new Error('No authentication token found.');
+    }
+
+    try {
+      const response = await fetch(path, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setData(result);
+        setLoading(false);
+        return result;
+      } else {
+        throw new Error(result.message || `API ${method} request to ${path} failed`);
+      }
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : 'An unexpected error occurred.';
+      setError(errorMessage);
+      setLoading(false);
+      console.error(`API mutation to ${path} failed:`, e);
+      throw new Error(errorMessage);
+    }
+  };
+
+  return { mutate, data, loading, error };
+}
