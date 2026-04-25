@@ -82,9 +82,9 @@ export default function ContentManagementPage() {
     const { t, language } = useLanguage();
     const firestore = useFirestore();
     
-    const [interests, setInterests] = useState<string[]>(INTEREST_OPTIONS);
-    const [datingGoals, setDatingGoals] = useState<string[]>(DATING_GOALS);
-    const [educationLevels, setEducationLevels] = useState<string[]>(EDUCATION_OPTIONS);
+    const [interests, setInterests] = useState<string[]>([...INTEREST_OPTIONS] as string[]);
+    const [datingGoals, setDatingGoals] = useState<string[]>([...DATING_GOALS] as string[]);
+    const [educationLevels, setEducationLevels] = useState<string[]>([...EDUCATION_OPTIONS] as string[]);
     const [isSaving, setIsSaving] = useState(false);
     const [isAddingAction, setIsAddingAction] = useState(false);
 

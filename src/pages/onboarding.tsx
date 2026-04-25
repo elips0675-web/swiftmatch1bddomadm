@@ -53,8 +53,8 @@ export default function OnboardingPage() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const [dynamicInterests, setDynamicInterests] = useState<string[]>(INTEREST_OPTIONS);
-  const [dynamicGoals, setDynamicGoals] = useState<string[]>(DATING_GOALS);
+  const [dynamicInterests, setDynamicInterests] = useState<string[]>([...INTEREST_OPTIONS] as string[]);
+  const [dynamicGoals, setDynamicGoals] = useState<string[]>([...DATING_GOALS] as string[]);
 
   useEffect(() => {
     if (user) {
