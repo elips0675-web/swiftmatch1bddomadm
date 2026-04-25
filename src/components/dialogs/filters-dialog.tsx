@@ -21,7 +21,7 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { DATING_GOALS, INTEREST_OPTIONS, CAPITALS, CIRCADIAN_RHYTHM_OPTIONS, ATTACHMENT_STYLE_OPTIONS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { useUser } from "@/firebase/auth/use-user";
+import { useUser } from "@/shims/firebase";
 import { PremiumDialog } from "./premium-dialog";
 import { Lock } from "lucide-react";
 
