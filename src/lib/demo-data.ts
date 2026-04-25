@@ -2,7 +2,7 @@ import { PlaceHolderImages } from "./placeholder-images";
 
 const futureDate = new Date(new Date().getTime() + 24 * 60 * 60 * 1000).toISOString();
 
-export const ALL_DEMO_USERS = [
+export const ALL_DEMO_USERS: any[] = [
   { id: 1, name: 'Анна', age: 24, img: '/demo/people/anna.png', hint: 'woman portrait', online: true, distance: 2, match: 87, city: 'Москва', zodiac: 'Лев', interests: ['Фотография', 'Путешествия', 'Кофе', 'Музыка', 'Спорт'], bio: 'Люблю закаты, хороший кофе и интересные разговоры.', height: 172, goal: 'Серьезные отношения', gender: 'female', lookingFor: 'male', superLikes: 5, boost: { boostedUntil: futureDate }, circadian: 'lark' },
   
   // 10 Men for Anna (Москва, совпадающие интересы и цели)
@@ -31,7 +31,7 @@ export const TOP_OF_THE_WEEK = [
   { id: 'top4', name_ru: 'React-разработчики', name_en: 'React Developers', members: 6543, img: 'https://picsum.photos/seed/top_week_4/600/400' },
 ];
 
-export const GROUP_CATEGORIES = [
+export const GROUP_CATEGORIES: any[] = [
   {
     id: 'music', name_ru: 'Музыка', name_en: 'Music', icon: 'Music', img: 'https://picsum.photos/seed/cat_music/600/400', hint: 'concert crowd',
     subgroups: [

@@ -19,7 +19,7 @@ export async function sendTestNotification(title: string, body: string) {
     registration.showNotification(title, {
       body,
       icon: '/icons/icon-192x192.png',
-      vibrate: [200, 100, 200],
+      ...({ vibrate: [200, 100, 200] } as any),
     });
   }
 }

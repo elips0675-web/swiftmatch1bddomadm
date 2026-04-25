@@ -104,6 +104,7 @@ export interface TitleMetadata {
   icon: string;
   description_en: string;
   description_ru: string;
+  color?: string;
 }
 
 export const ALL_TITLES: TitleMetadata[] = [

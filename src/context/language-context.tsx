@@ -5,7 +5,7 @@ type Language = 'RU' | 'EN';
 interface LanguageContextProps {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: string) => string;
+  t: (key: string, options?: Record<string, any>) => string;
 }
 
 const translations = {
