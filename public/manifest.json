@@ -1,0 +1,22 @@
+{
+  "name": "SwiftMatch - AI Dating",
+  "short_name": "SwiftMatch",
+  "description": "Premium AI-powered dating experience.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#fe3c72",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192/fe3c72/ffffff?text=S",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://placehold.co/512x512/fe3c72/ffffff?text=SwiftMatch",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
