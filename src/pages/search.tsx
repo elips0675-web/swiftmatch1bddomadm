@@ -260,7 +260,7 @@ function SearchContent() {
             )}
         </div>
         
-        {!userList.length ? (
+        {noMoreUsers ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center h-full bg-[#f8f9fb]">
                 <Sparkles size={48} className="text-muted-foreground opacity-20 mb-4" />
                 <h4 className="text-xl font-black uppercase">{'Анкеты закончились'}</h4>
