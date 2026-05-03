@@ -244,6 +244,8 @@ function SearchContent() {
 
   if (isLoading) return <div className="flex-1 flex items-center justify-center h-full"><Skeleton className="w-[90%] h-[70vh] rounded-2xl" /></div>;
 
+  const noMoreUsers = !user || currentIndex >= userList.length;
+
   return (
     <>
       <AppHeader />
@@ -258,7 +260,7 @@ function SearchContent() {
             )}
         </div>
         
-        {!userList.length ? (
+        {noMoreUsers ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center h-full bg-[#f8f9fb]">
                 <Sparkles size={48} className="text-muted-foreground opacity-20 mb-4" />
                 <h4 className="text-xl font-black uppercase">{'Анкеты закончились'}</h4>
