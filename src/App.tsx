@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/context/language-context";
+import { AdminLayout } from "@/components/layout/admin-layout";
 import { FeatureFlagsProvider } from "@/context/feature-flags-context";
 import { FirebaseClientProvider } from "@/shims/firebase";
 import { AppContainer } from "@/components/layout/app-container";
