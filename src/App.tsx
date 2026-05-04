@@ -61,14 +61,16 @@ const App = () => (
                   <Route path="/" element={<Home />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/activity" element={<Activity />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="/admin/analytics" element={<AdminAnalytics />} />
-                  <Route path="/admin/content" element={<AdminContent />} />
-                  <Route path="/admin/features" element={<AdminFeatures />} />
-                  <Route path="/admin/messaging" element={<AdminMessaging />} />
-                  <Route path="/admin/monetization" element={<AdminMonetization />} />
-                  <Route path="/admin/reports" element={<AdminReports />} />
-                  <Route path="/admin/users" element={<AdminUsers />} />
+                  <Route path="/admin" element={<AdminLayout><Outlet /></AdminLayout>}>
+                    <Route index element={<Admin />} />
+                    <Route path="analytics" element={<AdminAnalytics />} />
+                    <Route path="content" element={<AdminContent />} />
+                    <Route path="features" element={<AdminFeatures />} />
+                    <Route path="messaging" element={<AdminMessaging />} />
+                    <Route path="monetization" element={<AdminMonetization />} />
+                    <Route path="reports" element={<AdminReports />} />
+                    <Route path="users" element={<AdminUsers />} />
+                  </Route>
                   <Route path="/chats" element={<Chats />} />
                   <Route path="/chats/:chatId" element={<ChatId />} />
                   <Route path="/contest" element={<Contest />} />
