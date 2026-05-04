@@ -35,38 +35,30 @@ export default function EditProfilePage() {
   const [isGeneratingBio, setIsGeneratingBio] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
-    const fetchProfile = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch('/api/profile/me', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          // Убедимся, что photos всегда является массивом
-          data.photos = Array.isArray(data.photos) ? data.photos : [];
-          setProfile(data);
-        } else {
-          toast({ title: "Ошибка", description: "Не удалось загрузить данные профиля.", variant: "destructive" });
-          router.push('/profile');
-        }
-      } catch (error) {
-        console.error("Fetch profile error:", error);
-        toast({ title: "Сетевая ошибка", description: "Не удалось подключиться к серверу.", variant: "destructive" });
-      } finally {
-        setIsLoading(false);
-      }
+    const demoProfile = {
+      displayName: "Александр",
+      bio: "Люблю путешествия и фотографию 📸",
+      gender: "male",
+      birthDate: "1995-06-15",
+      location: "Москва",
+      datingGoal: "",
+      interests: ["Путешествия", "Фотография", "Музыка"],
+      photos: ["/demo/people/me.png"],
     };
-
-    fetchProfile();
-  }, [router]);
+    const saved = localStorage.getItem('userProfile');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        parsed.photos = Array.isArray(parsed.photos) ? parsed.photos : demoProfile.photos;
+        setProfile(parsed);
+      } catch {
+        setProfile(demoProfile);
+      }
+    } else {
+      setProfile(demoProfile);
+    }
+    setIsLoading(false);
+  }, []);
 
   const handlePhotosChange = (newPhotos: string[]) => {
     setProfile({ ...profile, photos: newPhotos });
@@ -93,11 +85,6 @@ export default function EditProfilePage() {
     }
 
     setIsSaving(true);
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
 
     const cleanedInterests = (profile.interests || []).filter((i: string) => !BANNED_WORDS.includes(i));
     
@@ -106,31 +93,10 @@ export default function EditProfilePage() {
       interests: cleanedInterests,
     };
 
-    try {
-      const response = await fetch('/api/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(dataToSave),
-      });
-
-      if (response.ok) {
-        toast({ title: "Профиль сохранен", description: "Ваши данные успешно обновлены." });
-        // Обновляем localStorage для консистентности
-        localStorage.setItem('userProfile', JSON.stringify(dataToSave));
-        router.push("/profile");
-      } else {
-        const errorData = await response.json();
-        toast({ title: "Ошибка сохранения", description: errorData.message || "Не удалось обновить профиль.", variant: "destructive" });
-      }
-    } catch (error) {
-      console.error("Save profile error:", error);
-      toast({ title: "Сетевая ошибка", description: "Проверьте ваше подключение.", variant: "destructive" });
-    } finally {
-      setIsSaving(false);
-    }
+    localStorage.setItem('userProfile', JSON.stringify(dataToSave));
+    toast({ title: "Профиль сохранен", description: "Ваши данные успешно обновлены." });
+    setIsSaving(false);
+    router.push("/profile");
   };
 
   const toggleInterest = (interest: string) => {
