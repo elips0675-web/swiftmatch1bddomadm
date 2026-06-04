@@ -350,7 +350,7 @@ export default function ProfilePage() {
       <AppHeader />
       <main className="flex-1 overflow-y-auto pb-24">
         <div className="h-24 gradient-bg relative -mx-5 mb-10">
-          <div className="absolute top-4 right-6 flex gap-3">
+          <div className="absolute top-4 right-20 flex gap-3">
             <Link href="/profile/edit" className="text-white/90 p-2 bg-black/10 rounded-full backdrop-blur-md transition-all active:scale-95"><Edit2 size={18} /></Link>
             <Link href="/faq" className="text-white/90 p-2 bg-black/10 rounded-full backdrop-blur-md transition-all active:scale-95"><HelpCircle size={18} /></Link>
             <Link href="/settings" className="text-white/90 p-2 bg-black/10 rounded-full backdrop-blur-md transition-all active:scale-95"><Settings size={18} /></Link>
