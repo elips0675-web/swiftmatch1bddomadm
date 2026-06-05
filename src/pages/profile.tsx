@@ -128,6 +128,32 @@ export default function ProfilePage() {
     const participationStatus = localStorage.getItem('contest_participation');
     if (participationStatus) setHasParticipated(true);
 
+    setIsPremium(localStorage.getItem('isPremium') === 'true');
+
+    const savedVisitors = localStorage.getItem('userProfileVisitors');
+    if (savedVisitors) {
+      try { setVisitors(JSON.parse(savedVisitors)); } catch {}
+    } else {
+      const names = language === 'RU'
+        ? ['Мария','Алексей','Дарья','Иван','Ольга','Кирилл','Полина','Артём']
+        : ['Maria','Alex','Daria','Ivan','Olga','Kirill','Polina','Artem'];
+      const cities = language === 'RU'
+        ? ['Москва','Санкт-Петербург','Казань','Сочи','Новосибирск']
+        : ['Moscow','Saint Petersburg','Kazan','Sochi','Novosibirsk'];
+      const now = Date.now();
+      const generated = Array.from({ length: 8 }).map((_, i) => ({
+        id: `v_${i}`,
+        name: names[i % names.length],
+        age: 21 + ((i * 3) % 15),
+        city: cities[i % cities.length],
+        photo: PlaceHolderImages[(i + 1) % PlaceHolderImages.length].imageUrl,
+        visitedAt: now - (i + 1) * 1000 * 60 * (15 + i * 30),
+        isNew: i < 3,
+      }));
+      setVisitors(generated);
+      localStorage.setItem('userProfileVisitors', JSON.stringify(generated));
+    }
+
     // Cleanup blob URLs on unmount
     return () => {
       photos.forEach(photo => {
