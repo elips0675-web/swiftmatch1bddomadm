@@ -914,17 +914,17 @@ export default function ProfilePage() {
             <DialogTitle className="text-xl font-black tracking-tight mb-1 flex items-center gap-2"><Rocket size={20} className="text-primary"/>Поднять профиль</DialogTitle>
             <p className="text-xs text-muted-foreground font-medium">Ваш профиль будет показываться первым в поиске в течение 30 минут. Выберите способ активации.</p>
           </div>
-          <div className="p-6 flex flex-col gap-3">
+          <div className="p-6 flex flex-col items-center gap-3">
             <Button 
               onClick={() => handleBoost('ad')}
-              className="w-full h-14 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-black uppercase tracking-widest shadow-xl shadow-green-500/20 border-0 active:scale-95 transition-all flex items-center gap-2"
+              className="w-64 h-14 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-black uppercase tracking-widest shadow-xl shadow-green-500/20 border-0 active:scale-95 transition-all flex items-center gap-2"
             >
               <Video size={20} />
               Смотреть рекламу (бесплатно)
             </Button>
             <Button 
               onClick={() => handleBoost('payment')}
-              className="w-full h-14 rounded-2xl gradient-bg text-white font-black uppercase tracking-widest shadow-xl shadow-primary/20 border-0 active:scale-95 transition-all flex items-center gap-2"
+              className="w-64 h-14 rounded-2xl gradient-bg text-white font-black uppercase tracking-widest shadow-xl shadow-primary/20 border-0 active:scale-95 transition-all flex items-center gap-2"
             >
               <CreditCard size={20} />
               Оплатить (49 ₽)
