@@ -1,19 +1,7 @@
-import { createContext, useContext, type ReactNode } from "react"
-import { api } from "@/lib/api"
-import type { UserProfile } from "@/types"
-
-interface FirebaseUser {
-  uid: string
-  email: string | null
-  displayName: string | null
-  photoURL: string | null
-}
-
-interface UserState {
-  user: FirebaseUser | null
-  loading: boolean
-  error: string | null
-}
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { getSupabase } from '@/lib/supabase'
+import { useAuth } from '@/context/auth-context'
+import type { ProfileRow } from '@/types/supabase'
 
 interface DocState<T> {
   data: T | null
@@ -25,6 +13,13 @@ interface CollectionState<T> {
   data: T[]
   loading: boolean
   error: string | null
+}
+
+interface FirebaseUser {
+  uid: string
+  email: string | null
+  displayName: string | null
+  photoURL: string | null
 }
 
 const Ctx = createContext<null>(null)
@@ -41,10 +36,19 @@ export function useFirestore() {
   return null
 }
 
-export function useAuth(): UserState {
-  const token = localStorage.getItem("authToken")
-  if (!token) return { user: null, loading: false, error: null }
-  return { user: null, loading: true, error: null }
+export function useAuth(): { user: FirebaseUser | null; loading: boolean } {
+  const { supabaseUser, isLoading } = useAuth()
+  if (!supabaseUser) return { user: null, loading: isLoading }
+
+  return {
+    user: {
+      uid: supabaseUser.id,
+      email: supabaseUser.email,
+      displayName: supabaseUser.user_metadata?.name ?? null,
+      photoURL: supabaseUser.user_metadata?.avatar_url ?? null,
+    },
+    loading: isLoading,
+  }
 }
 
 export function useStorage() {
@@ -53,29 +57,83 @@ export function useStorage() {
 
 export async function uploadProfilePhoto(file: File): Promise<string | null> {
   try {
-    const formData = new FormData()
-    formData.append("photo", file)
-    const res = await api.post<{ url: string }>("/upload/profile-photo", formData, {
-      headers: {} as Record<string, string>,
-    })
-    return res.url
+    const supabase = getSupabase()
+    const ext = file.name.split('.').pop()
+    const path = `profiles/${crypto.randomUUID()}.${ext}`
+    const { error } = await supabase.storage.from('photos').upload(path, file)
+    if (error) throw error
+    const { data: url } = supabase.storage.from('photos').getPublicUrl(path)
+    return url.publicUrl
   } catch {
     return null
   }
 }
 
-export function useUser(): UserState {
-  const token = localStorage.getItem("authToken")
-  if (!token) return { user: null, loading: false, error: null }
-  return { user: null, loading: true, error: null }
+export function useUser(): DocState<FirebaseUser> {
+  const { supabaseUser, isLoading } = useAuth()
+  if (!supabaseUser) return { data: null, loading: isLoading, error: null }
+  return {
+    data: {
+      uid: supabaseUser.id,
+      email: supabaseUser.email,
+      displayName: supabaseUser.user_metadata?.name ?? null,
+      photoURL: supabaseUser.user_metadata?.avatar_url ?? null,
+    },
+    loading: isLoading,
+    error: null,
+  }
 }
 
-export function useDoc<T = UserProfile>(_ref: string): DocState<T> {
-  return { data: null as T | null, loading: false, error: null }
+export function useDoc<T = ProfileRow>(collection: string, id?: string): DocState<T> {
+  const [state, setState] = useState<DocState<T>>({ data: null, loading: true, error: null })
+
+  useEffect(() => {
+    if (!id) {
+      setState({ data: null, loading: false, error: null })
+      return
+    }
+
+    const supabase = getSupabase()
+    let cancelled = false
+
+    supabase
+      .from(collection)
+      .select('*')
+      .eq('id', id)
+      .single()
+      .then(({ data, error }) => {
+        if (!cancelled) {
+          setState({ data: data as T | null, loading: false, error: error?.message ?? null })
+        }
+      })
+
+    return () => { cancelled = true }
+  }, [collection, id])
+
+  return state
 }
 
-export function useCollection<T = UserProfile>(_ref: string): CollectionState<T> {
-  return { data: [] as T[], loading: false, error: null }
+export function useCollection<T = ProfileRow>(collection: string): CollectionState<T> {
+  const [state, setState] = useState<CollectionState<T>>({ data: [], loading: true, error: null })
+
+  useEffect(() => {
+    const supabase = getSupabase()
+    let cancelled = false
+
+    supabase
+      .from(collection)
+      .select('*')
+      .limit(50)
+      .then(({ data, error }) => {
+        if (!cancelled) {
+          setState({ data: (data ?? []) as T[], loading: false, error: error?.message ?? null })
+        }
+      })
+
+    return () => { cancelled = true }
+  }, [collection])
+
+  return state
 }
 
 export function useMemoFirebase<T>(factory: () => T, _deps: unknown[]) {

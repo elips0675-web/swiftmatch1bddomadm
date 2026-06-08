@@ -1,4 +1,6 @@
 interface EnvConfig {
+  supabaseUrl: string
+  supabaseAnonKey: string
   apiUrl: string
   wsUrl: string
   appName: string
@@ -17,6 +19,8 @@ function getEnvVar(key: string, fallback: string): string {
 }
 
 const config: EnvConfig = {
+  supabaseUrl: getEnvVar('VITE_SUPABASE_URL', ''),
+  supabaseAnonKey: getEnvVar('VITE_SUPABASE_ANON_KEY', ''),
   apiUrl: getEnvVar('VITE_API_URL', '/api'),
   wsUrl: getEnvVar('VITE_WS_URL', 'ws://localhost:8080'),
   appName: getEnvVar('VITE_APP_NAME', 'SwiftMatch'),
@@ -32,7 +36,7 @@ const config: EnvConfig = {
 
 export function getConfig(): EnvConfig {
   if (config.isProduction) {
-    const required = ['VITE_API_URL'] as const
+    const required = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'] as const
     for (const key of required) {
       if (!import.meta.env[key]) {
         console.error(`Missing required env var: ${key}`)

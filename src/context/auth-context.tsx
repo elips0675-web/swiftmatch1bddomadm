@@ -1,6 +1,7 @@
-import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode } from 'react'
-import { api } from '@/lib/api'
+import { createContext, useContext, useEffect, useReducer, useCallback, type ReactNode } from 'react'
+import { getSupabase } from '@/lib/supabase'
 import type { AuthState } from '@/types'
+import type { User } from '@supabase/supabase-js'
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>
@@ -8,6 +9,7 @@ interface AuthContextValue extends AuthState {
   register: (email: string, password: string, name: string) => Promise<void>
   logout: () => void
   clearError: () => void
+  supabaseUser: User | null
 }
 
 type AuthAction =
@@ -19,7 +21,7 @@ type AuthAction =
 
 const initialState: AuthState = {
   user: null,
-  token: localStorage.getItem('authToken'),
+  token: null,
   isLoading: true,
   error: null,
 }
@@ -29,12 +31,7 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
     case 'AUTH_START':
       return { ...state, isLoading: true, error: null }
     case 'AUTH_SUCCESS':
-      return {
-        user: action.payload,
-        token: action.token,
-        isLoading: false,
-        error: null,
-      }
+      return { user: action.payload, token: action.token, isLoading: false, error: null }
     case 'AUTH_FAILURE':
       return { ...state, isLoading: false, error: action.payload }
     case 'AUTH_LOGOUT':
@@ -50,93 +47,97 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState)
+  const supabase = getSupabase()
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken')
-    if (!token) {
-      dispatch({ type: 'AUTH_LOGOUT' })
-      return
-    }
-
-    api
-      .get<{ user: AuthState['user'] }>('/auth/me')
-      .then((res) =>
-        dispatch({ type: 'AUTH_SUCCESS', payload: res.user, token }),
-      )
-      .catch(() => {
-        localStorage.removeItem('authToken')
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const user = session.user
+        dispatch({
+          type: 'AUTH_SUCCESS',
+          payload: {
+            id: Number(user.id),
+            name: user.user_metadata?.name || user.email?.split('@')[0] || '',
+            email: user.email || '',
+            avatar: user.user_metadata?.avatar_url || '',
+          },
+          token: session.access_token,
+        })
+      } else if (event === 'SIGNED_OUT') {
         dispatch({ type: 'AUTH_LOGOUT' })
-      })
-  }, [])
+      } else if (event === 'TOKEN_REFRESHED') {
+        // session refreshed
+      }
+    })
 
-  useEffect(() => {
-    const handleUnauthorized = () => {
-      dispatch({ type: 'AUTH_LOGOUT' })
-      localStorage.removeItem('authToken')
-    }
-    window.addEventListener('auth:unauthorized', handleUnauthorized)
-    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized)
-  }, [])
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const user = session.user
+        dispatch({
+          type: 'AUTH_SUCCESS',
+          payload: {
+            id: Number(user.id),
+            name: user.user_metadata?.name || user.email?.split('@')[0] || '',
+            email: user.email || '',
+            avatar: user.user_metadata?.avatar_url || '',
+          },
+          token: session.access_token,
+        })
+      } else {
+        dispatch({ type: 'AUTH_LOGOUT' })
+      }
+    })
+
+    return () => listener?.subscription.unsubscribe()
+  }, [supabase])
 
   const login = useCallback(async (email: string, password: string) => {
     dispatch({ type: 'AUTH_START' })
-    try {
-      const res = await api.post<{ user: AuthState['user']; token: string }>(
-        '/auth/login',
-        { email, password },
-      )
-      localStorage.setItem('authToken', res.token)
-      dispatch({ type: 'AUTH_SUCCESS', payload: res.user, token: res.token })
-    } catch (err: any) {
-      dispatch({ type: 'AUTH_FAILURE', payload: err.message || 'Login failed' })
-      throw err
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      dispatch({ type: 'AUTH_FAILURE', payload: error.message })
+      throw error
     }
-  }, [])
+  }, [supabase])
 
   const loginWithGoogle = useCallback(async () => {
     dispatch({ type: 'AUTH_START' })
-    try {
-      const res = await api.post<{ user: AuthState['user']; token: string }>(
-        '/auth/google',
-      )
-      localStorage.setItem('authToken', res.token)
-      dispatch({ type: 'AUTH_SUCCESS', payload: res.user, token: res.token })
-    } catch (err: any) {
-      dispatch({ type: 'AUTH_FAILURE', payload: err.message || 'Google login failed' })
-      throw err
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' })
+    if (error) {
+      dispatch({ type: 'AUTH_FAILURE', payload: error.message })
+      throw error
     }
-  }, [])
+  }, [supabase])
 
-  const register = useCallback(
-    async (email: string, password: string, name: string) => {
-      dispatch({ type: 'AUTH_START' })
-      try {
-        const res = await api.post<{ user: AuthState['user']; token: string }>(
-          '/auth/register',
-          { email, password, name },
-        )
-        localStorage.setItem('authToken', res.token)
-        dispatch({ type: 'AUTH_SUCCESS', payload: res.user, token: res.token })
-      } catch (err: any) {
-        dispatch({ type: 'AUTH_FAILURE', payload: err.message || 'Registration failed' })
-        throw err
-      }
-    },
-    [],
-  )
+  const register = useCallback(async (email: string, password: string, name: string) => {
+    dispatch({ type: 'AUTH_START' })
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    })
+    if (error) {
+      dispatch({ type: 'AUTH_FAILURE', payload: error.message })
+      throw error
+    }
+  }, [supabase])
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('authToken')
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut()
     dispatch({ type: 'AUTH_LOGOUT' })
-  }, [])
+  }, [supabase])
 
   const clearError = useCallback(() => {
     dispatch({ type: 'CLEAR_ERROR' })
   }, [])
 
+  const supabaseUser = state.user
+    ? ({ id: String(state.user.id), email: state.user.email, user_metadata: { name: state.user.name, avatar_url: state.user.avatar } } as User)
+    : null
+
   return (
     <AuthContext.Provider
-      value={{ ...state, login, loginWithGoogle, register, logout, clearError }}
+      value={{ ...state, login, loginWithGoogle, register, logout, clearError, supabaseUser }}
     >
       {children}
     </AuthContext.Provider>
@@ -145,8 +146,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext)
-  if (!ctx) {
-    throw new Error('useAuth must be used within AuthProvider')
-  }
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
   return ctx
 }
