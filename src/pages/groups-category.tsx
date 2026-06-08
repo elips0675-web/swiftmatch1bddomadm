@@ -81,7 +81,7 @@ function SubGroupsContent() {
 
     const [showPremiumDialog, setShowPremiumDialog] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [viewMode, setViewMode] = useState<'feed' | 'list'>('feed');
+    const [viewMode, setViewMode] = useState<'feed' | 'list'>('list');
 
     const category = useMemo(() => GROUP_CATEGORIES.find(c => c.id === categoryId), [categoryId]);
 
