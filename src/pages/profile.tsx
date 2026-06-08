@@ -89,7 +89,8 @@ export default function ProfilePage() {
         }
         setProfile({
           ...parsed,
-          displayName: parsed.displayName || parsed.name || t('profile.someone')
+          displayName: parsed.displayName || parsed.name || t('profile.someone'),
+          lookingFor: parsed.gender === 'female' ? 'male' : parsed.lookingFor,
         });
       } catch (e) {
         console.error("Failed to parse profile", e);

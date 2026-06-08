@@ -267,7 +267,7 @@ export default function EditProfilePage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">{t('profile.label.gender')}</Label>
-                <Select value={profile.gender || ''} onValueChange={(val) => setProfile({ ...profile, gender: val })}>
+                <Select value={profile.gender || ''} onValueChange={(val) => setProfile({ ...profile, gender: val, lookingFor: val === 'female' ? 'male' : profile.lookingFor })}>
                   <SelectTrigger className="rounded-xl bg-muted/30 border-0 h-11 font-bold px-4"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-xl border-0 shadow-2xl">
                     <SelectItem value="male" className="font-bold text-[11px]">Мужчина</SelectItem>

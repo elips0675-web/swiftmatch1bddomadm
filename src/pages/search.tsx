@@ -133,6 +133,11 @@ function SearchContent() {
     } else {
       userToSet = ALL_DEMO_USERS[0];
     }
+    if (!userToSet.img || !userToSet.photoURL) {
+      const demoMatch = ALL_DEMO_USERS.find(u => u.name === (userToSet.displayName || userToSet.name)) || ALL_DEMO_USERS.find(u => u.gender === userToSet.gender) || ALL_DEMO_USERS[0];
+      userToSet.img = userToSet.img || demoMatch.img;
+      userToSet.photoURL = userToSet.photoURL || demoMatch.img;
+    }
     setCurrentUser(userToSet);
 
     const userIndex = ALL_DEMO_USERS.findIndex(u => u.id === userToSet.id);
