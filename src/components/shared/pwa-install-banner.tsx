@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, X, Share, SquarePlus as PlusSquare } from 'lucide-react';
+import { Download, X, Smartphone, Monitor, Share, SquarePlus as PlusSquare, Globe, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/context/language-context';
 import { toast } from '@/hooks/use-toast';
@@ -17,28 +17,24 @@ interface BeforeInstallPromptEvent extends Event {
 export function PwaInstallBanner() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIos, setIsIos] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const { t } = useLanguage();
 
   useEffect(() => {
-    // Check if already installed
     const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
     setIsStandalone(!!isStandaloneMode);
 
-    // Detect iOS
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
+    const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
     setIsIos(isIosDevice);
+    setIsMobile(isMobileDevice);
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setInstallPrompt(e as BeforeInstallPromptEvent);
-      
-      const dismissed = sessionStorage.getItem('pwa-install-dismissed');
-      if (!dismissed && !isStandaloneMode) {
-        setTimeout(() => setIsVisible(true), 3000);
-      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -46,9 +42,7 @@ export function PwaInstallBanner() {
     if (!isStandaloneMode) {
       const dismissed = sessionStorage.getItem('pwa-install-dismissed');
       if (!dismissed) {
-        setTimeout(() => {
-          setIsVisible(true);
-        }, isIosDevice ? 4000 : 2000);
+        setTimeout(() => setIsVisible(true), isIosDevice ? 4000 : 2000);
       }
     }
 
@@ -72,6 +66,9 @@ export function PwaInstallBanner() {
     setIsVisible(false);
   };
 
+  const hasInstallButton = Boolean(!isIos && installPrompt);
+  const showMenuHint = Boolean(isIos || (!installPrompt && isMobile));
+
   if (isStandalone) return null;
 
   return (
@@ -92,10 +89,10 @@ export function PwaInstallBanner() {
               </div>
               <div className="flex-1 pt-1">
                 <h5 className="text-sm font-black tracking-tight leading-tight">
-                  {isIos ? t('pwa.install.ios_title') : t('pwa.install.title')}
+                  {t('pwa.install.title')}
                 </h5>
                 <p className="text-[11px] text-muted-foreground leading-relaxed mt-1 font-medium">
-                  {isIos ? t('pwa.install.ios_description') : t('pwa.install.description')}
+                  {t('pwa.install.description')}
                 </p>
               </div>
               <button onClick={handleDismiss} className="text-muted-foreground/40 hover:text-foreground p-1 transition-colors">
@@ -103,33 +100,66 @@ export function PwaInstallBanner() {
               </button>
             </div>
 
-            {isIos || !installPrompt ? (
+            {isIos ? (
               <div className="bg-muted/30 rounded-2xl p-3 flex flex-col gap-2 border border-border/40">
                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-tight text-foreground/70">
-                  <span className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm text-foreground text-[11px] font-black">1</span>
-                  <span>Откройте меню браузера ⋮</span>
+                  <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm text-blue-500">
+                    <Share size={14} />
+                  </div>
+                  <span>1. {t('pwa.install.ios_share')}</span>
                 </div>
                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-tight text-foreground/70">
-                  <span className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm text-foreground text-[11px] font-black">2</span>
-                  <span>Выберите «Установить приложение»</span>
+                  <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm text-foreground">
+                    <PlusSquare size={14} />
+                  </div>
+                  <span>2. {t('pwa.install.ios_add')}</span>
                 </div>
               </div>
             ) : (
-              <div className="flex gap-2">
+              <>
+                {hasInstallButton && (
+                  <Button
+                    onClick={handleInstall}
+                    className="w-full h-12 rounded-xl gradient-bg text-white font-black uppercase text-[11px] tracking-widest border-0 shadow-xl shadow-primary/20 active:scale-95 transition-all flex items-center gap-2"
+                  >
+                    <Smartphone size={16} />
+                    {t('pwa.install.button')}
+                  </Button>
+                )}
+                {showMenuHint && (
+                  <div className="bg-muted/30 rounded-2xl p-3 flex flex-col gap-2 border border-border/40">
+                    <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-tight text-foreground/70">
+                      <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm text-foreground">
+                        <Menu size={14} />
+                      </div>
+                      <span>1. {t('pwa.install.menu_open')}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-tight text-foreground/70">
+                      <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm text-foreground">
+                        <Download size={14} />
+                      </div>
+                      <span>2. {t('pwa.install.menu_install')}</span>
+                    </div>
+                  </div>
+                )}
+                {!hasInstallButton && !showMenuHint && (
+                  <div className="bg-muted/30 rounded-2xl p-3 flex flex-col gap-2 border border-border/40">
+                    <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-tight text-foreground/70">
+                      <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm text-foreground">
+                        <Globe size={14} />
+                      </div>
+                      <span>1. {t('pwa.install.address_bar_install')}</span>
+                    </div>
+                  </div>
+                )}
                 <Button
                   onClick={handleDismiss}
                   variant="ghost"
-                  className="flex-1 h-11 rounded-xl font-black text-[10px] uppercase tracking-widest text-muted-foreground"
+                  className="w-full h-10 rounded-xl font-black text-[10px] uppercase tracking-widest text-muted-foreground"
                 >
                   {t('pwa.install.cancel')}
                 </Button>
-                <Button 
-                  onClick={handleInstall}
-                  className="flex-[1.5] h-11 rounded-xl gradient-bg text-white font-black uppercase text-[10px] tracking-widest border-0 shadow-xl shadow-primary/20 active:scale-95 transition-all"
-                >
-                  {t('pwa.install.button')}
-                </Button>
-              </div>
+              </>
             )}
           </div>
         </motion.div>
