@@ -43,11 +43,12 @@ export function PwaInstallBanner() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // For iOS, we show the banner manually since there's no event
-    if (isIosDevice && !isStandaloneMode) {
+    if (!isStandaloneMode) {
       const dismissed = sessionStorage.getItem('pwa-install-dismissed');
       if (!dismissed) {
-        setTimeout(() => setIsVisible(true), 4000);
+        setTimeout(() => {
+          setIsVisible(true);
+        }, isIosDevice ? 4000 : 2000);
       }
     }
 
@@ -102,19 +103,15 @@ export function PwaInstallBanner() {
               </button>
             </div>
 
-            {isIos ? (
+            {isIos || !installPrompt ? (
               <div className="bg-muted/30 rounded-2xl p-3 flex flex-col gap-2 border border-border/40">
                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-tight text-foreground/70">
-                  <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm text-blue-500">
-                    <Share size={14} />
-                  </div>
-                  <span>1. {t('pwa.install.ios_share')}</span>
+                  <span className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm text-foreground text-[11px] font-black">1</span>
+                  <span>Откройте меню браузера ⋮</span>
                 </div>
                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-tight text-foreground/70">
-                  <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm text-foreground">
-                    <PlusSquare size={14} />
-                  </div>
-                  <span>2. {t('pwa.install.ios_add')}</span>
+                  <span className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm text-foreground text-[11px] font-black">2</span>
+                  <span>Выберите «Установить приложение»</span>
                 </div>
               </div>
             ) : (
