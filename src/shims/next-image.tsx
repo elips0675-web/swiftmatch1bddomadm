@@ -1,4 +1,5 @@
 import React, { ImgHTMLAttributes } from "react";
+import { cn } from "@/lib/utils";
 
 interface NextImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "alt" | "loading"> {
   src: string | { src: string };
@@ -47,8 +48,9 @@ export default function NextImage({
       loading={priority ? "eager" : loading ?? "lazy"}
       decoding="async"
       sizes={sizes}
-      className={className}
+      className={cn("anti-screenshot", className)}
       style={fillStyle}
+      onContextMenu={(e) => e.preventDefault()}
       {...rest}
     />
   );

@@ -12,6 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/context/language-context";
 import { cn, getUserTitles } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+
 import { ALL_DEMO_USERS } from "@/lib/demo-data";
 import { ZodiacIcon } from "@/components/shared/zodiac-icon";
 import {
@@ -281,7 +282,7 @@ function UserProfileContent() {
                     <Camera size={18} className="text-primary" />
                     <h4 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground/60">{t('profile.gallery')}</h4>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4 anti-screenshot">
                     {photos.map((url, idx) => (
                       <div key={`${url}-${idx}`} onClick={() => { setActivePhotoIndex(idx); setIsViewerOpen(true); }} className="relative aspect-square rounded-2xl overflow-hidden bg-muted cursor-pointer group shadow-sm border border-border/10">
                         <Image 
@@ -356,10 +357,10 @@ function UserProfileContent() {
             <div className="relative h-56 flex items-center justify-center p-6 gradient-bg overflow-hidden">
                 <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
                 <div className="flex items-center justify-center gap-0 relative">
-                    <motion.div initial={{ x: -60, opacity: 0, rotate: -15, scale: 0.8 }} animate={{ x: 0, opacity: 1, rotate: -8, scale: 1 }} transition={{ type: "spring", damping: 12, delay: 0.2 }} className="w-36 h-36 rounded-2xl border-4 border-white shadow-2xl overflow-hidden relative z-10 -mr-8 bg-muted">
+                    <motion.div initial={{ x: -60, opacity: 0, rotate: -15, scale: 0.8 }} animate={{ x: 0, opacity: 1, rotate: -8, scale: 1 }} transition={{ type: "spring", damping: 12, delay: 0.2 }} className="w-36 h-36 rounded-2xl border-4 border-white shadow-2xl overflow-hidden relative z-10 -mr-8 bg-muted anti-screenshot">
                         <Image src={currentUser?.photoURL || currentUser?.img || PlaceHolderImages[10].imageUrl} alt="You" fill sizes="144px" className="object-cover" />
                     </motion.div>
-                    <motion.div initial={{ x: 60, opacity: 0, rotate: 15, scale: 0.8 }} animate={{ x: 0, opacity: 1, rotate: 8, scale: 1 }} transition={{ type: "spring", damping: 12, delay: 0.3 }} className="w-36 h-36 rounded-2xl border-4 border-white shadow-2xl overflow-hidden relative z-0 bg-muted">
+                    <motion.div initial={{ x: 60, opacity: 0, rotate: 15, scale: 0.8 }} animate={{ x: 0, opacity: 1, rotate: 8, scale: 1 }} transition={{ type: "spring", damping: 12, delay: 0.3 }} className="w-36 h-36 rounded-2xl border-4 border-white shadow-2xl overflow-hidden relative z-0 bg-muted anti-screenshot">
                         <Image src={matchUser?.img || PlaceHolderImages[0].imageUrl} alt={matchUser?.name || "Match photo"} fill sizes="144px" className="object-cover" />
                     </motion.div>
                 </div>

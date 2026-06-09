@@ -14,6 +14,7 @@ import { useLanguage } from "@/context/language-context";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi, useApiMutation } from "@/hooks/useApi";
+import { useAntiScreenshot } from "@/hooks/useAntiScreenshot";
 import { format } from 'date-fns';
 
 const QUICK_REACTIONS = [
@@ -55,6 +56,8 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
   const { t } = useLanguage();
   const [inputValue, setInputValue] = useState("");
   const [optimisticMessages, setOptimisticMessages] = useState<any[]>([]);
+
+  const msgContainerRef = useAntiScreenshot<HTMLDivElement>();
 
   const { data: messages, loading: messagesLoading, error: messagesError, refetch: refetchMessages } = useApi<any[]>(
     `/api/chats/${params.chatId}/messages`
@@ -132,7 +135,7 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
         </DropdownMenu>
       </header>
       
-      <main className="flex-1 overflow-y-auto p-4 space-y-2">
+      <main ref={msgContainerRef} className="flex-1 overflow-y-auto p-4 space-y-2 anti-screenshot">
         <div className="text-center my-2"><Badge variant="secondary">{t('chats.today')}</Badge></div>
         <AnimatePresence initial={false}>
           {allMessages.map((msg) => (

@@ -204,7 +204,7 @@ function ActivityItem({ item, onUnlock }: { item: any, onUnlock: () => void }) {
 
   return (
     <div className={cn(
-      "flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer group relative overflow-hidden h-[72px]",
+      "flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer group relative overflow-hidden h-[72px] anti-screenshot",
       item.seen ? "bg-white/40 opacity-70" : "bg-white app-shadow hover:translate-y-[-1px] border border-white"
     )}>
       {!item.seen && (

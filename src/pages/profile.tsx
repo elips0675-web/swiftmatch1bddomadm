@@ -388,7 +388,7 @@ export default function ProfilePage() {
         <div className="-mt-20 px-5">
           <div className="text-center mb-6">
             <div className="relative inline-block mb-4">
-              <div className="relative w-32 h-32 rounded-2xl border-[6px] border-white app-shadow overflow-hidden bg-muted">
+              <div className="relative w-32 h-32 rounded-2xl border-[6px] border-white app-shadow overflow-hidden bg-muted anti-screenshot">
                 <Image src={photos[0] || PlaceHolderImages[0].imageUrl} alt="Profile" fill className="object-cover" />
               </div>
             </div>
@@ -558,7 +558,7 @@ export default function ProfilePage() {
                   </div>
                   <button onClick={handleAddPhotoClick} className="h-8 rounded-lg text-[9px] font-black uppercase tracking-widest text-primary px-3 bg-primary/5 hover:bg-primary/10 transition-colors">{t('profile.add')}</button>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 anti-screenshot">
                   {photos.map((url, idx) => (
                     <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden bg-muted border border-border/10 group shadow-sm">
                       <Image src={url} alt={`Gallery ${idx}`} fill className="object-cover transition-transform group-hover:scale-105 duration-500" />
@@ -670,7 +670,7 @@ export default function ProfilePage() {
                           }}
                           className="flex items-center gap-3 p-2 rounded-2xl hover:bg-muted/60 active:scale-[0.99] transition-all cursor-pointer relative"
                         >
-                          <div className={cn("relative w-14 h-14 rounded-2xl overflow-hidden bg-muted shrink-0", blurred && "blur-md")}>
+                          <div className={cn("relative w-14 h-14 rounded-2xl overflow-hidden bg-muted shrink-0 anti-screenshot", blurred && "blur-md")}>
                             <Image src={v.photo} alt={v.name} fill className="object-cover" />
                           </div>
                           {blurred && (
@@ -837,7 +837,7 @@ export default function ProfilePage() {
             <CarouselContent className="h-full ml-0">
               {photos.map((url, idx) => (
                 <CarouselItem key={`viewer-${url}-${idx}`} className="h-[80vh] flex items-center justify-center p-4 pl-4">
-                  <div className="relative w-full h-full rounded-2xl overflow-hidden app-shadow border-4 border-white bg-black/20">
+                  <div className="relative w-full h-full rounded-2xl overflow-hidden app-shadow border-4 border-white bg-black/20 anti-screenshot">
                     <Image src={url} alt={`Gallery view`} fill sizes="(max-width: 480px) 100vw, 440px" className="object-cover" />
                   </div>
                 </CarouselItem>

@@ -1,18 +1,20 @@
+import { useCallback, useMemo } from "react";
 import { useNavigate, useLocation, useParams as useRouterParams, useSearchParams as useRouterSearchParams } from "react-router-dom";
 
 export function useRouter() {
   const navigate = useNavigate();
   const location = useLocation();
-  return {
-    push: (href: string) => navigate(href),
-    replace: (href: string) => navigate(href, { replace: true }),
-    back: () => navigate(-1),
-    forward: () => navigate(1),
-    refresh: () => window.location.reload(),
-    prefetch: (_: string) => {},
+  const push = useCallback((href: string) => navigate(href), [navigate]);
+  const replace = useCallback((href: string) => navigate(href, { replace: true }), [navigate]);
+  const back = useCallback(() => navigate(-1), [navigate]);
+  const forward = useCallback(() => navigate(1), [navigate]);
+  const refresh = useCallback(() => window.location.reload(), []);
+  const prefetch = useCallback((_: string) => {}, []);
+  return useMemo(() => ({
+    push, replace, back, forward, refresh, prefetch,
     pathname: location.pathname,
     query: {} as Record<string, string>,
-  };
+  }), [push, replace, back, forward, refresh, prefetch, location.pathname]);
 }
 
 export function usePathname() {

@@ -290,7 +290,7 @@ function SearchContent() {
                     x: { type: "spring", stiffness: 300, damping: 30 },
                     opacity: { duration: 0.2 }
                   }}
-                  className="absolute w-full h-full bg-white rounded-2xl overflow-hidden app-shadow border-4 border-white cursor-pointer group"
+                  className="absolute w-full h-full bg-white rounded-2xl overflow-hidden app-shadow border-4 border-white cursor-pointer group anti-screenshot"
                   onClick={() => router.push(`/user?id=${user.id}`)}
                 >
                   <Image 
@@ -298,7 +298,6 @@ function SearchContent() {
                     alt={user.name} 
                     fill 
                     sizes="(max-width: 360px) 100vw, 360px"
-                    quality={85}
                     priority={currentIndex === 0}
                     className="object-cover transition-transform duration-700 group-hover:scale-105" 
                   />
