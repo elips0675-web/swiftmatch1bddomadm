@@ -427,6 +427,9 @@ const translations = {
     'pwa.install.menu_open': 'Откройте меню браузера ⋮',
     'pwa.install.menu_install': 'Выберите «Установить приложение»',
     'pwa.install.address_bar_install': 'Нажмите на иконку установки в адресной строке',
+    'pwa.install.guide_title': 'Как установить?',
+    'pwa.install.guide_desc': 'Нажмите на иконку установки в адресной строке или откройте меню ⋮ → «Установить приложение»',
+    'pwa.install.guide_button': 'Как установить?',
 
     // Groups
     'groups.tabs.find': 'Популярные',
@@ -954,6 +957,9 @@ const translations = {
     'pwa.install.menu_open': 'Откройте меню ⋮',
     'pwa.install.menu_install': 'Выберите «Установить приложение»',
     'pwa.install.address_bar_install': 'Нажмите на иконку установки в адресной строке',
+    'pwa.install.guide_title': 'Как установить?',
+    'pwa.install.guide_desc': 'Нажмите на иконку установки в адресной строке или откройте меню ⋮ → «Установить приложение»',
+    'pwa.install.guide_button': 'Как установить?',
 
     // Settings
     'settings.notifications': 'Уведомления',
@@ -1384,6 +1390,9 @@ const translations = {
     'pwa.install.menu_open': 'Open browser menu ⋮',
     'pwa.install.menu_install': 'Select "Install App"',
     'pwa.install.address_bar_install': 'Click the install icon in the address bar',
+    'pwa.install.guide_title': 'How to install?',
+    'pwa.install.guide_desc': 'Click the install icon in the address bar or open menu ⋮ → "Install App"',
+    'pwa.install.guide_button': 'How to install?',
 
     // Groups
     'groups.tabs.find': 'Popular',
@@ -1911,6 +1920,9 @@ const translations = {
     'pwa.install.menu_open': 'Open menu ⋮',
     'pwa.install.menu_install': 'Select "Install App"',
     'pwa.install.address_bar_install': 'Click the install icon in the address bar',
+    'pwa.install.guide_title': 'How to install?',
+    'pwa.install.guide_desc': 'Click the install icon in the address bar or open menu ⋮ → "Install App"',
+    'pwa.install.guide_button': 'How to install?',
 
     // Settings
     'settings.notifications': 'Notifications',

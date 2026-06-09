@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, X, Smartphone, Share, SquarePlus as PlusSquare, Globe, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,6 @@ interface BeforeInstallPromptEvent extends Event {
 export function PwaInstallBanner() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIos, setIsIos] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const { t } = useLanguage();
@@ -28,9 +27,7 @@ export function PwaInstallBanner() {
 
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
-    const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
     setIsIos(isIosDevice);
-    setIsMobile(isMobileDevice);
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -52,13 +49,19 @@ export function PwaInstallBanner() {
   }, []);
 
   const handleInstall = async () => {
-    if (!installPrompt) return;
-    installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
-    if (outcome === 'accepted') {
-      toast({ title: t('pwa.install.success') });
+    if (installPrompt) {
+      installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      if (outcome === 'accepted') {
+        toast({ title: t('pwa.install.success') });
+        setIsVisible(false);
+      }
+    } else {
+      toast({
+        title: t('pwa.install.guide_title'),
+        description: t('pwa.install.guide_desc'),
+      });
     }
-    setIsVisible(false);
   };
 
   const handleDismiss = () => {
@@ -98,13 +101,13 @@ export function PwaInstallBanner() {
             </div>
 
             <>
-              {installPrompt && !isIos && (
+              {!isIos && (
                 <Button
                   onClick={handleInstall}
                   className="w-full h-12 rounded-xl gradient-bg text-white font-black uppercase text-[11px] tracking-widest border-0 shadow-xl shadow-primary/20 active:scale-95 transition-all flex items-center gap-2"
                 >
                   <Smartphone size={16} />
-                  {t('pwa.install.button')}
+                  {installPrompt ? t('pwa.install.button') : t('pwa.install.guide_button')}
                 </Button>
               )}
 
