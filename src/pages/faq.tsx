@@ -20,7 +20,7 @@ export default function FaqPage() {
   const { t } = useLanguage();
 
   return (
-    <div className="flex flex-col min-h-svh bg-white">
+    <div className="flex flex-col min-h-screen bg-white">
       <AppHeader />
       <main className="flex-1 overflow-y-auto p-6 flex flex-col">
         <div className="text-center mb-8">

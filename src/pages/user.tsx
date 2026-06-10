@@ -143,7 +143,7 @@ function UserProfileContent() {
   if (!user || user.isSystem) return null;
 
   return (
-    <div className="flex flex-col min-h-svh bg-[#f8f9fb]">
+    <div className="flex flex-col min-h-screen bg-[#f8f9fb]">
       <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 p-4 flex items-center justify-between">
          <Button 
             variant="ghost" 
@@ -468,7 +468,7 @@ function UserProfileContent() {
               <div className="border-t border-border/30 my-1" />
               <button
                 onClick={() => setShowCustomInvite(true)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-border/60 text-muted-foreground hover:border-pink-300 hover:text-pink-500 hover:bg-pink-50 active:scale-[0.98] transition-all font-bold text-sm"
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl border-2 border-dashed border-border/60 text-muted-foreground hover:border-pink-300 hover:text-pink-500 hover:bg-pink-50 active:scale-[0.98] transition-all font-bold text-sm"
               >
                 <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center shadow-sm">
                   <Sparkles size={16} className="text-pink-500" />

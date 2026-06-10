@@ -200,7 +200,7 @@ export default function GroupsPage() {
 
   if (!isMounted) {
     return (
-      <div className="flex flex-col h-svh bg-[#f8f9fb]">
+      <div className="flex flex-col h-screen bg-[#f8f9fb]">
         <AppHeader />
         <main className="flex-1 p-6">
           <div className="px-5 pt-6">
@@ -220,7 +220,7 @@ export default function GroupsPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-svh bg-[#f8f9fb]">
+    <div className="flex flex-col min-h-screen bg-[#f8f9fb]">
       <AppHeader />
       <main ref={mainRef} className="flex-1 overflow-y-auto pb-24">
         <div className="px-5 pt-6 flex justify-between items-center mb-4">

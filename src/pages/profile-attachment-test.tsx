@@ -85,7 +85,7 @@ export default function AttachmentStyleTestPage() {
   const progress = ((currentQuestionIndex + 1) / ATTACHMENT_STYLE_QUESTIONS.length) * 100;
 
   return (
-    <div className="flex flex-col min-h-svh bg-[#f8f9fb]">
+    <div className="flex flex-col min-h-screen bg-[#f8f9fb]">
       <AppHeader />
       <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-24">
           <AnimatePresence mode="wait">

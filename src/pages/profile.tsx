@@ -322,7 +322,7 @@ export default function ProfilePage() {
   };
 
   if (!isMounted || !profile) return (
-    <div className="flex flex-col h-svh bg-[#f8f9fb]">
+    <div className="flex flex-col h-screen bg-[#f8f9fb]">
       <AppHeader />
       <main className="flex-1 p-6"><Skeleton className="h-64 w-full rounded-2xl" /></main>
       <BottomNav />
@@ -333,7 +333,7 @@ export default function ProfilePage() {
   const joinedGroupNames: string[] = profile?.joinedGroups || [];
 
   return (
-    <div className="flex flex-col min-h-svh bg-[#f8f9fb]">
+    <div className="flex flex-col min-h-screen bg-[#f8f9fb]">
        <input 
         type="file" 
         ref={fileInputRef} 

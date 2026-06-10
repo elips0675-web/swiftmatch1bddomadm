@@ -7,7 +7,7 @@ export function AppContainer({ children }: { children: React.ReactNode }) {
 
     return (
         <div className={cn(
-            'min-h-svh relative flex flex-col',
+            'min-h-screen relative flex flex-col',
             isAdminPage 
                 ? 'bg-muted/40' 
                 : 'mx-auto max-w-[480px] bg-white shadow-2xl overflow-x-hidden'

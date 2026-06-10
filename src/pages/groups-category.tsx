@@ -116,7 +116,7 @@ function SubGroupsContent() {
     const categoryNameEn = category.name_en;
 
     return (
-        <div className="flex flex-col h-svh bg-[#f8f9fb]">
+        <div className="flex flex-col h-screen bg-[#f8f9fb]">
             <header className="flex items-center gap-2 px-3 py-2 border-b border-border sticky top-0 bg-white/90 backdrop-blur-lg z-50 h-16">
                 <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-muted/50">
                     <ChevronLeft size={24} className="text-foreground" />
@@ -237,7 +237,7 @@ function SubGroupsContent() {
 
 function LoadingSkeleton() {
     return (
-        <div className="flex flex-col h-svh bg-[#f8f9fb]">
+        <div className="flex flex-col h-screen bg-[#f8f9fb]">
             <header className="flex items-center gap-2 px-3 py-2 border-b border-border sticky top-0 bg-white/90 backdrop-blur-lg z-50 h-16">
                 <Skeleton className="h-10 w-10 rounded-full" />
                 <Skeleton className="h-6 w-32 rounded-md" />

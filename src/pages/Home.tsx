@@ -75,7 +75,7 @@ export default function Home() {
   }, [currentUser, router]);
 
   return (
-    <div className="flex flex-col min-h-svh bg-[#f8f9fb] relative">
+    <div className="flex flex-col min-h-screen bg-[#f8f9fb] relative">
       <AnimatePresence>
         {!isMounted && (
           <motion.div 

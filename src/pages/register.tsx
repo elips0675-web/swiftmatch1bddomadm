@@ -90,7 +90,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-svh bg-white relative overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-white relative overflow-hidden">
       {/* Background Gradients */}
       <div className="absolute top-[-10%] left-[-20%] w-[100%] h-[50%] bg-primary/10 rounded-full blur-[120px] -z-10"></div>
       <div className="absolute bottom-[-10%] right-[-20%] w-[100%] h-[50%] bg-[#ff8e53]/10 rounded-full blur-[120px] -z-10"></div>

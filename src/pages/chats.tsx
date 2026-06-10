@@ -411,7 +411,7 @@ function ChatsContent() {
     // Группы: вместо чата показываем ленту подгруппы
     if (selectedChat.isGroup) {
       return (
-        <div className="flex flex-col h-svh bg-[#f8f9fb]">
+<div className="flex flex-col h-screen bg-[#f8f9fb]">
           <header className="flex items-center gap-2 px-3 py-2 border-b border-border sticky top-0 bg-white/90 backdrop-blur-lg z-50 h-16">
             <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-full hover:bg-muted/50">
               <ChevronLeft size={24} />
@@ -457,7 +457,7 @@ function ChatsContent() {
     }
 
     return (
-      <div className="flex flex-col h-svh bg-[#f8f9fb]">
+      <div className="flex flex-col h-screen bg-[#f8f9fb]">
         <header className="flex items-center gap-2 px-3 py-2 border-b border-border sticky top-0 bg-white/90 backdrop-blur-lg z-50 h-16">
           <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-full hover:bg-muted/50"><ChevronLeft size={24} /></Button>
           <div className="relative">

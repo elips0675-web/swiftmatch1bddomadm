@@ -28,7 +28,7 @@ const QUICK_REACTIONS = [
 
 function ChatRoomSkeleton() {
     return (
-      <div className="flex flex-col h-svh bg-[#f8f9fb]">
+      <div className="flex flex-col h-screen bg-[#f8f9fb]">
         <header className="flex items-center gap-2 px-3 py-2 border-b border-border sticky top-0 bg-white/90 backdrop-blur-lg z-50 h-16">
           <Skeleton className="w-8 h-8 rounded-full" />
           <div className="w-10 h-10 rounded-full bg-muted" />
@@ -110,7 +110,7 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
   
   if (messagesError || partnerError || !chatPartner) {
     return (
-      <div className="flex flex-col items-center justify-center h-svh bg-muted">
+      <div className="flex flex-col items-center justify-center h-screen bg-muted">
           <p className="text-muted-foreground font-medium">{t('error.chat_not_found')}</p>
           <Button onClick={() => router.back()} className="mt-4">{t('button.back')}</Button>
       </div>
@@ -120,7 +120,7 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
   const allMessages = [...(messages || []), ...optimisticMessages];
 
   return (
-    <div className="flex flex-col h-svh bg-[#f8f9fb]">
+    <div className="flex flex-col h-screen bg-[#f8f9fb]">
       <header className="flex items-center gap-2 px-3 py-2 border-b border-border sticky top-0 bg-white/90 backdrop-blur-lg z-50 h-16">
         <Button variant="ghost" size="icon" onClick={() => router.push('/chats')} className="rounded-full"><ChevronLeft size={24} /></Button>
         <Image src={chatPartner.avatar || '/default-avatar.png'} alt={chatPartner.name || 'User'} width={40} height={40} className="rounded-full bg-muted" />

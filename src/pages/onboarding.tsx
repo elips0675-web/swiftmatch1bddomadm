@@ -390,7 +390,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-svh bg-white">
+    <div className="flex flex-col min-h-screen bg-white">
       <div className="fixed top-0 left-0 right-0 h-1.5 bg-muted z-50">
         <div className="h-full gradient-bg transition-all duration-500 ease-out" style={{ width: `${(step / totalSteps) * 100}%` }}></div>
       </div>

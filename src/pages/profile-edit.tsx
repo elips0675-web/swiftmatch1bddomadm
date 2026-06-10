@@ -178,7 +178,7 @@ export default function EditProfilePage() {
 
   if (isLoading || !profile) {
     return (
-      <div className="flex flex-col min-h-svh bg-[#f8f9fb]">
+      <div className="flex flex-col min-h-screen bg-[#f8f9fb]">
         <AppHeader />
         <main className="flex-1 p-4 space-y-5 pb-24">
           <div className="bg-white rounded-2xl p-6 app-shadow space-y-6 border border-border/40">
@@ -195,7 +195,7 @@ export default function EditProfilePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-svh bg-[#f8f9fb]">
+    <div className="flex flex-col min-h-screen bg-[#f8f9fb]">
       <AppHeader />
       <main className="flex-1 overflow-y-auto p-4 space-y-5 pb-24">
 
