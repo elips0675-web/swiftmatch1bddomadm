@@ -58,24 +58,35 @@ export const isGibberish = (text: string): boolean => {
   // 1. Repeating characters like "aaaaaaa" or "!!!!! "
   if (/(.)\1{4,}/.test(normalized)) return true;
 
+  // 2. Check for repeating trigrams across the ENTIRE text (catches "ыва ывааываывы ыавыва")
+  const full = normalized.replace(/[^a-zа-яё]/g, '');
+  if (full.length >= 6) {
+    const seenFull: Record<string, number> = {};
+    for (let i = 0; i <= full.length - 3; i++) {
+      const tri = full.slice(i, i + 3);
+      seenFull[tri] = (seenFull[tri] || 0) + 1;
+      if (seenFull[tri] >= 3) return true;
+    }
+  }
+
   const words = normalized.split(/\s+/);
 
   for (const word of words) {
     const letters = word.replace(/[^a-zа-яё]/g, '');
     if (letters.length < 3) continue;
 
-    // 2. No vowels at all in a word of 3+ letters.
+    // 3. No vowels at all in a word of 3+ letters.
     const vowelsMatch = letters.match(/[aeiouyаеёиоуыэюя]/g);
     const vowelsCount = vowelsMatch ? vowelsMatch.length : 0;
     if (letters.length >= 3 && vowelsCount === 0) return true;
 
-    // 3. Check for excessive consonant clusters (5+ consecutive consonants is always gibberish).
+    // 4. Check for excessive consonant clusters (5+ consecutive consonants is always gibberish).
     const consonantClusters = letters.match(/[bcdfghjklmnpqrstvwxzбвгджзйклмнпрстфхцчшщ]{5,}/g);
     if (consonantClusters) {
       return true;
     }
 
-    // 4. Common keyboard row sequences (mashing)
+    // 5. Common keyboard row sequences (mashing)
     const mashPatterns = [
       'asdf', 'sdfg', 'dfgh', 'fghj', 'ghjk', 'hjkl', 'zxcv', 'xcvb',
       'йцук', 'цуке', 'укен', 'кенг', 'фыва', 'ывап', 'вапр', 'апро', 'прол', 'ролд', 'олдж',
@@ -87,12 +98,12 @@ export const isGibberish = (text: string): boolean => {
       if (letters.includes(pattern)) return true;
     }
 
-    // 5. Check for repeating trigrams (e.g., "аыв" appears 3+ times in "выаываываыв")
-    const seen: Record<string, number> = {};
+    // 6. Check for repeating trigrams within a word
+    const seenWord: Record<string, number> = {};
     for (let i = 0; i <= letters.length - 3; i++) {
       const tri = letters.slice(i, i + 3);
-      seen[tri] = (seen[tri] || 0) + 1;
-      if (seen[tri] >= 3) return true;
+      seenWord[tri] = (seenWord[tri] || 0) + 1;
+      if (seenWord[tri] >= 3) return true;
     }
   }
 
