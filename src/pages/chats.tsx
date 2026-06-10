@@ -616,12 +616,20 @@ function ChatsContent() {
                   "flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer group border border-white mb-2",
                   "bg-white app-shadow hover:bg-muted/30"
                 )}>
-                  <div className="relative flex-shrink-0">
-                    <div className={cn(
-                      "w-12 h-12 rounded-xl overflow-hidden relative border-2 border-white shadow-sm transition-transform group-hover:scale-105 bg-muted flex items-center justify-center"
-                    )}>
-                      {item.isGroup ? <Users size={24} className="text-orange-500" /> : <Image src={item.img} alt={item.name || ''} fill sizes="48px" className="object-cover" />}
-                    </div>
+                    <div className="relative flex-shrink-0">
+                    {item.isGroup ? (
+                      <div className={cn(
+                        "w-12 h-12 rounded-xl overflow-hidden border-2 border-white shadow-sm transition-transform group-hover:scale-105 bg-muted flex items-center justify-center"
+                      )}>
+                        <Users size={24} className="text-orange-500" />
+                      </div>
+                    ) : (
+                      <div className={cn(
+                        "w-12 h-12 rounded-xl overflow-hidden border-2 border-white shadow-sm transition-transform group-hover:scale-105 bg-muted"
+                      )}>
+                        <Image src={item.img} alt={item.name || ''} fill sizes="48px" className="object-cover" />
+                      </div>
+                    )}
                     {!item.isGroup && item.online && <span className="absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full shadow-md bg-[#2ecc71]"></span>}
                   </div>
                   <div className="flex-1 min-w-0">

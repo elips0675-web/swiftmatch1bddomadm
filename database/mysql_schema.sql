@@ -578,9 +578,29 @@ CREATE TABLE compatibility_scores (
   PRIMARY KEY (style_a, style_b)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =============================================================
+-- -----------------------------------------------------------
+-- 39. CAMPAIGNS (admin push/email campaigns)
+-- -----------------------------------------------------------
+CREATE TABLE campaigns (
+  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  admin_id      INT UNSIGNED NOT NULL,
+  title         VARCHAR(255) NOT NULL,
+  body          TEXT NOT NULL,
+  target        ENUM('all','premium','new') NOT NULL DEFAULT 'all',
+  channel       ENUM('push','email') NOT NULL DEFAULT 'push',
+  status        ENUM('draft','scheduled','sent') NOT NULL DEFAULT 'draft',
+  delivered     INT UNSIGNED NOT NULL DEFAULT 0,
+  opened        INT UNSIGNED NOT NULL DEFAULT 0,
+  clicked       INT UNSIGNED NOT NULL DEFAULT 0,
+  created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_campaigns_admin (admin_id),
+  INDEX idx_campaigns_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------
 -- SEED DATA
--- =============================================================
+-- -----------------------------------------------------------
 
 -- Feature flags (single row)
 INSERT INTO feature_flags (id) VALUES (1) ON DUPLICATE KEY UPDATE id=id;
