@@ -186,6 +186,22 @@ function ChatsContent() {
   const matchId = searchParams.get('matchId');
   const groupId = searchParams.get('groupId');
 
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+
+  useEffect(() => {
+    const handleResize = () => setViewportHeight(window.innerHeight);
+    window.addEventListener('resize', handleResize);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => setViewportHeight(window.visualViewport?.height || window.innerHeight));
+    }
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', () => {});
+      }
+    };
+  }, []);
+
   const [activeTab, setActiveTab] = useState<"direct" | "groups">("direct");
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
@@ -416,8 +432,8 @@ function ChatsContent() {
     // Группы: вместо чата показываем ленту подгруппы
     if (selectedChat.isGroup) {
       return (
-<div className="flex flex-col h-screen bg-[#f8f9fb]">
-          <header className="flex items-center gap-2 px-3 py-2 border-b border-border sticky top-0 bg-white/90 backdrop-blur-lg z-50 h-16">
+<div className="flex flex-col bg-[#f8f9fb]" style={{ height: viewportHeight }}>
+           <header className="flex items-center gap-2 px-3 py-2 border-b border-border sticky top-0 bg-white/90 backdrop-blur-lg z-50 h-16">
             <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-full hover:bg-muted/50">
               <ChevronLeft size={24} />
             </Button>
@@ -462,7 +478,7 @@ function ChatsContent() {
     }
 
     return (
-      <div className="flex flex-col h-screen bg-[#f8f9fb]">
+      <div className="flex flex-col bg-[#f8f9fb]" style={{ height: viewportHeight }}>
         <header className="flex items-center gap-2 px-3 py-2 border-b border-border sticky top-0 bg-white/90 backdrop-blur-lg z-50 h-16">
           <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-full hover:bg-muted/50"><ChevronLeft size={24} /></Button>
           <div className="relative">
