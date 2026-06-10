@@ -7,7 +7,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, Trash2, Package, ShieldAlert, Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/context/language-context';
-import { getToken } from '@/lib/token';
 import { invalidateContentCache, useContentConfig } from '@/lib/useContentConfig';
 import { exportToCsv } from '@/lib/admin-mock-data';
 
@@ -61,7 +60,7 @@ function EditableList({ items, onAdd, onDelete, nounKey, section, saving }: Edit
 }
 
 async function saveSection(section: string, items: string[]) {
-  const token = getToken()
+  const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token')
   const res = await fetch(`/api/admin/content/${section}`, {
     method: 'PUT',
     headers: {
