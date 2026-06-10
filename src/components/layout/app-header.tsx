@@ -155,7 +155,7 @@ export function AppHeader() {
               <span className="text-[10px] font-black uppercase tracking-tighter">{language}</span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="rounded-2xl border-0 app-shadow p-1.5 min-w-[140px] bg-white">
+          <DropdownMenuContent align="end" className="rounded-xl border-0 app-shadow p-1.5 min-w-[140px] bg-white">
             <DropdownMenuItem
               onClick={() => handleLangChange("RU")}
               className="rounded-xl font-bold text-[11px] uppercase tracking-wider cursor-pointer py-2.5 px-4"
@@ -185,7 +185,7 @@ export function AppHeader() {
               )}
             </button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-[340px] p-0 rounded-[2rem] border-0 shadow-2xl bg-white overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+          <PopoverContent align="end" className="w-[340px] p-0 rounded-lg border-0 shadow-2xl bg-white overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
             {isNotificationsOpen && (
               <>
                 <div className="p-5 border-b border-border/50 bg-muted/10 flex justify-between items-center">
@@ -207,9 +207,9 @@ export function AppHeader() {
                         return (
                           <div
                             key={note.id}
-                            className="p-3.5 rounded-2xl hover:bg-muted/40 transition-all cursor-pointer group relative flex gap-4"
+                            className="p-3.5 rounded-xl hover:bg-muted/40 transition-all cursor-pointer group relative flex gap-4"
                           >
-                            <div className={cn("mt-0.5 w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center shadow-sm border border-white transition-transform group-hover:scale-105", note.bgColor, note.color)}>
+                            <div className={cn("mt-0.5 w-11 h-11 shrink-0 rounded-xl flex items-center justify-center shadow-sm border border-white transition-transform group-hover:scale-105", note.bgColor, note.color)}>
                               <Icon size={18} fill={note.type === 'like' ? 'currentColor' : 'none'} />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -250,7 +250,7 @@ export function AppHeader() {
                       router.push('/activity');
                       setIsNotificationsOpen(false);
                     }}
-                    className="h-10 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:bg-primary/5 w-full rounded-2xl border border-primary/10"
+                    className="h-10 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:bg-primary/5 w-full rounded-xl border border-primary/10"
                   >
                     {t('notifications.all_events')}
                   </Button>

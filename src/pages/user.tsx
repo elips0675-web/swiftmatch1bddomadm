@@ -426,7 +426,7 @@ function UserProfileContent() {
         </div>
 
         <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
-          <DialogContent className="max-w-sm p-0 gap-0 overflow-hidden rounded-2xl">
+          <DialogContent className="max-w-sm p-0 gap-0 overflow-hidden rounded-xl">
             <div className="gradient-bg px-6 pt-8 pb-6 text-center">
               <div className="w-14 h-14 rounded-full bg-white/20 mx-auto mb-3 flex items-center justify-center shadow-lg">
                 <Heart size={24} className="text-white" fill="currentColor" />
@@ -480,7 +480,7 @@ function UserProfileContent() {
         </Dialog>
 
         <Dialog open={showCustomInvite} onOpenChange={setShowCustomInvite}>
-          <DialogContent className="max-w-sm p-0 gap-0 overflow-hidden rounded-2xl">
+          <DialogContent className="max-w-sm p-0 gap-0 overflow-hidden rounded-xl">
             <div className="gradient-bg px-6 pt-8 pb-6 text-center">
               <div className="w-14 h-14 rounded-full bg-white/20 mx-auto mb-3 flex items-center justify-center shadow-lg">
                 <Sparkles size={24} className="text-white" />
