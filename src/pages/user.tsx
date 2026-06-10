@@ -437,13 +437,13 @@ function UserProfileContent() {
             <div className="flex flex-col gap-2 p-4 bg-white">
               {(['coffee', 'cinema', 'walk', 'dinner', 'picnic', 'exhibition', 'museum'] as const).map((type) => {
                 const iconMap: Record<string, { icon: any, bg: string, color: string }> = {
-                  coffee: { icon: Coffee, bg: 'bg-amber-50 border-amber-200', color: 'text-amber-600' },
-                  cinema: { icon: Film, bg: 'bg-blue-50 border-blue-200', color: 'text-blue-600' },
-                  walk: { icon: Mountain, bg: 'bg-green-50 border-green-200', color: 'text-green-600' },
-                  dinner: { icon: UtensilsCrossed, bg: 'bg-red-50 border-red-200', color: 'text-red-500' },
-                  picnic: { icon: Trees, bg: 'bg-emerald-50 border-emerald-200', color: 'text-emerald-600' },
-                  exhibition: { icon: ImageIcon, bg: 'bg-rose-50 border-rose-200', color: 'text-rose-500' },
-                  museum: { icon: Palette, bg: 'bg-purple-50 border-purple-200', color: 'text-purple-500' },
+                  coffee: { icon: Coffee, bg: 'bg-white border-amber-200', color: 'text-amber-600' },
+                  cinema: { icon: Film, bg: 'bg-white border-blue-200', color: 'text-blue-600' },
+                  walk: { icon: Mountain, bg: 'bg-white border-green-200', color: 'text-green-600' },
+                  dinner: { icon: UtensilsCrossed, bg: 'bg-white border-red-200', color: 'text-red-500' },
+                  picnic: { icon: Trees, bg: 'bg-white border-emerald-200', color: 'text-emerald-600' },
+                  exhibition: { icon: ImageIcon, bg: 'bg-white border-rose-200', color: 'text-rose-500' },
+                  museum: { icon: Palette, bg: 'bg-white border-purple-200', color: 'text-purple-500' },
                 };
                 const { icon: Icon, bg, color } = iconMap[type];
                 return (
@@ -456,7 +456,7 @@ function UserProfileContent() {
                       setShowInviteDialog(false);
                       toast({ title: t('invite.sent_title'), description: t('invite.sent_desc', { type: t(`invite.option.${type}`) }) });
                     }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 ${bg} ${color} hover:shadow-md active:scale-[0.98] transition-all font-bold text-sm`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 ${color} ${bg} hover:bg-muted/30 active:scale-[0.98] transition-all font-bold text-sm`}
                   >
                     <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
                       <Icon size={16} />
