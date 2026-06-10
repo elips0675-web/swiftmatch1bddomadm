@@ -482,6 +482,7 @@ function ChatsContent() {
     }
 
     return (
+      <>
       <div className="flex flex-col bg-[#f8f9fb]" style={{ height: viewportHeight }}>
         <header className="flex items-center gap-2 px-3 py-2 border-b border-border sticky top-0 bg-white/90 backdrop-blur-lg z-50 h-16">
           <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-full hover:bg-muted/50"><ChevronLeft size={24} /></Button>
@@ -562,6 +563,7 @@ function ChatsContent() {
         </Dialog>
       </div>
       <BottomNav />
+    </>
     );
   }
 
