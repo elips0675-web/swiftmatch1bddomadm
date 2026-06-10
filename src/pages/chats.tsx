@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback, Suspense } from "react";
-import { Search, ChevronLeft, Send, MoveVertical as MoreVertical, Smile, Heart, Laugh, Compass, Coffee, Zap, MessageSquareQuote, Flame, Star, Ghost, Rocket, Crown, Music, Phone, Video, Flag, Check, CheckCheck, Info, Users, MessageSquare, ChevronRight, Trash2, ThumbsUp, PartyPopper, Eye, Frown, Award, TrendingUp, PawPrint, Globe, Film, BookOpen, Baby, Sun } from "lucide-react";
+import { Search, ChevronLeft, Send, MoveVertical as MoreVertical, Smile, Heart, Laugh, Zap, Flame, Star, Ghost, Rocket, Crown, Music, Phone, Video, Flag, Check, CheckCheck, Info, Users, MessageSquare, ChevronRight, Trash2, ThumbsUp, PartyPopper, Eye, Frown, Award } from "lucide-react";
 import Image from "@/shims/next-image";
 import { useSearchParams, useRouter } from "@/shims/next-navigation";
 import dynamic from "@/shims/next-dynamic";
@@ -30,21 +30,7 @@ const CategoryFeed = React.lazy(() => import("@/components/feeds/category-feed")
 const VideoCallDialog = dynamic(() => import('@/components/video-call').then(mod => mod.VideoCallDialog), { ssr: false });
 const VoiceCallDialog = dynamic(() => import('@/components/voice-call').then(mod => mod.VoiceCallDialog), { ssr: false });
 
-const CHAT_THEMES = [
-  { id: 'romantic', labelKey: 'chats.theme.romantic', icon: Heart, color: 'text-pink-500', mood: 'Romantic, sweet and poetic' },
-  { id: 'funny', labelKey: 'chats.theme.funny', icon: Laugh, color: 'text-orange-500', mood: 'Funny, witty and lighthearted' },
-  { id: 'hobbies', labelKey: 'chats.theme.hobbies', icon: Compass, color: 'text-blue-500', mood: 'Focus on shared interests and activities' },
-  { id: 'daily', labelKey: 'chats.theme.daily', icon: Coffee, color: 'text-amber-600', mood: 'Casual, relaxed daily life conversation' },
-  { id: 'impressions', labelKey: 'chats.theme.impressions', icon: MessageSquareQuote, color: 'text-purple-500', mood: 'Sharing impressions and experiences' },
-  { id: 'bold', labelKey: 'chats.theme.bold', icon: Zap, color: 'text-yellow-500', mood: 'Bold, confident and slightly flirty' },
-  { id: 'pets', labelKey: 'chats.theme.pets', icon: PawPrint, color: 'text-amber-500', mood: 'Pets and animals conversation' },
-  { id: 'travel', labelKey: 'chats.theme.travel', icon: Globe, color: 'text-emerald-500', mood: 'Travel and adventures' },
-  { id: 'movies', labelKey: 'chats.theme.movies', icon: Film, color: 'text-red-500', mood: 'Movies, series and entertainment' },
-  { id: 'books', labelKey: 'chats.theme.books', icon: BookOpen, color: 'text-indigo-500', mood: 'Books and literature' },
-  { id: 'dreams', labelKey: 'chats.theme.dreams', icon: Star, color: 'text-yellow-400', mood: 'Dreams, goals and aspirations' },
-  { id: 'childhood', labelKey: 'chats.theme.childhood', icon: Baby, color: 'text-pink-400', mood: 'Childhood memories and stories' },
-  { id: 'nature', labelKey: 'chats.theme.nature', icon: Sun, color: 'text-orange-400', mood: 'Nature, weather and seasons' },
-];
+
 
 const STORAGE_PREFIX = 'swiftchat_';
 
@@ -190,7 +176,7 @@ function ChatsContent() {
   const [inputValue, setInputValue] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [showPopularTopics, setShowPopularTopics] = useState(true);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -274,9 +260,7 @@ function ChatsContent() {
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(() => { if (selectedChat) scrollToBottom(); }, [messages, selectedChat]);
 
-  const handleThemeClick = useCallback((themeId: string) => {
-    setInputValue(t(`chats.theme_prompt.${themeId}`));
-  }, [t]);
+
 
   useEffect(() => {
     if (matchId) {
@@ -396,7 +380,7 @@ function ChatsContent() {
     loadMessages(chat.id).then(saved => {
       setMessages(saved && saved.length > 0 ? saved : getInitialMessages(t));
     });
-    setShowPopularTopics(true);
+
   };
 
   const handleBack = () => {
@@ -498,29 +482,7 @@ function ChatsContent() {
         </header>
         <main ref={msgContainerRef} className="flex-1 overflow-y-auto p-4 space-y-2 anti-screenshot"><div className="text-center my-2"><Badge variant="secondary" className="bg-white/50 text-[9px] text-muted-foreground border-0 font-black uppercase tracking-widest px-2.5 py-0.5">{t('chats.today')}</Badge></div><AnimatePresence>{messages.map((msg: any) => (<motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} key={msg.id} className={cn("flex flex-col max-w-[80%]", msg.sender === "me" ? "ml-auto items-end" : "items-start")}><div className={cn("px-3 py-2 rounded-lg text-sm shadow-sm font-medium leading-snug", msg.sender === "me" ? "gradient-bg text-white rounded-br-none shadow-primary/10" : "bg-white text-foreground rounded-bl-none border border-border/40")}>{msg.text}</div><span className="text-[9px] text-muted-foreground mt-1.5 px-1 font-bold uppercase tracking-tighter opacity-60">{msg.time}</span></motion.div>))}</AnimatePresence>{isTyping && (<motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-1.5 text-muted-foreground"><div className="flex gap-1 bg-white px-3 py-2.5 rounded-lg border border-border/40 shadow-sm rounded-bl-none"><span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce"></span><span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:0.2s]"></span><span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:0.4s]"></span></div><span className="text-[9px] font-bold uppercase tracking-widest">{t('chats.typing')}</span></motion.div>)}<div ref={messagesEndRef} /></main>
         <div className="p-4 bg-white border-t border-border shadow-[0_-10px_40px_-20px_rgba(0,0,0,0.1)] relative z-10">
-          {!selectedChat.isGroup && showPopularTopics && (
-  <div className="mb-4 px-1">
-    <div className="flex items-center gap-2 mb-3">
-      <TrendingUp size={14} className="text-primary" />
-      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('chats.popular_topics')}</span>
-    </div>
-    <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1">
-      {CHAT_THEMES.map((theme) => {
-        const Icon = theme.icon;
-        return (
-          <button
-            key={theme.id}
-            onClick={() => handleThemeClick(theme.id)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/40 border border-border/40 text-[10px] font-bold text-foreground/70 transition-all hover:bg-primary/10 hover:border-primary/20 hover:text-primary active:scale-95 flex-shrink-0"
-          >
-            <Icon size={14} className={theme.color} />
-            {t(theme.labelKey)}
-          </button>
-        );
-      })}
-    </div>
-  </div>
-)}
+
           <div className="flex items-center gap-3"><div className="flex-1 relative group"><Input value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} placeholder={t('chats.placeholder')} className="pr-12 h-11 bg-muted/50 border-0 rounded-2xl font-medium px-6 text-sm" /><Popover><PopoverTrigger asChild><button className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"><Smile size={20} /></button></PopoverTrigger><PopoverContent className="w-full max-w-[280px] p-2 rounded-2xl border-0 shadow-2xl bg-white" side="top" align="end"><div className="grid grid-cols-5 gap-1">{QUICK_REACTIONS.map(reaction => { const ReactionIcon = reaction.icon; return (<button key={reaction.id} onClick={() => handleSendMessage(reaction.label)} className="w-10 h-10 flex items-center justify-center hover:bg-muted rounded-xl transition-all active:scale-90"><ReactionIcon size={24} className={reaction.color} /></button>); })}</div></PopoverContent></Popover></div><Button size="icon" onClick={() => handleSendMessage()} disabled={!inputValue.trim()} className="h-11 w-11 rounded-2xl gradient-bg text-white shadow-xl shadow-primary/30 active:scale-95 transition-all"><Send size={18} className="ml-0.5" /></Button></div>
         </div>
         {selectedChat && !selectedChat.isGroup && isVideoCall && <VideoCallDialog open={isVideoCall} onOpenChange={setIsVideoCall} user={selectedChat} />}
