@@ -21,15 +21,19 @@ const FALLBACK: ContentConfig = {
 let cached: ContentConfig | null = null
 let loadingPromise: Promise<ContentConfig> | null = null
 
+function mapKeys(items: string[], prefix: string): string[] {
+  return items.map(item => item.startsWith(prefix) ? item : prefix + item)
+}
+
 async function fetchConfig(): Promise<ContentConfig> {
   try {
     const res = await fetch('/api/content')
     if (!res.ok) throw new Error('Failed to fetch')
     const data = await res.json()
     cached = {
-      interests: data.interests || [],
-      dating_goals: data.dating_goals || [],
-      education: data.education || [],
+      interests: mapKeys(data.interests || [], 'interest.'),
+      dating_goals: mapKeys(data.dating_goals || [], 'goal.'),
+      education: mapKeys(data.education || [], 'education.'),
       banned_words: data.banned_words || [],
       cities: data.cities || [],
     }

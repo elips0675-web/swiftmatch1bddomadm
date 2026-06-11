@@ -1,4 +1,5 @@
-cd C:\swiftmatch1
-npm run dev        # dev-сервер на localhost:8080
-npm test           # vitest
-npm run build      # production build
+# API сервер (порт 3002)
+cd C:\swiftmatch1bd\server && node src\index.js
+
+# Фронтенд (порт 8081)
+cd C:\swiftmatch1bd && npx vite --port 8081

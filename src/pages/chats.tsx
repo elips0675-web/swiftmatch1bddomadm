@@ -483,8 +483,8 @@ function ChatsContent() {
 
     return (
       <>
-      <div className="flex flex-col bg-[#f8f9fb]" style={{ height: viewportHeight }}>
-        <header className="flex items-center gap-2 px-3 py-2 border-b border-border sticky top-0 bg-white/90 backdrop-blur-lg z-50 h-16">
+      <div className="flex flex-col bg-[#f8f9fb]" style={{ height: `calc(${viewportHeight}px - 4rem)` }}>
+        <header className="flex items-center gap-2 px-3 py-2 border-b border-border bg-white/90 backdrop-blur-lg z-50 h-16 shrink-0">
           <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-full hover:bg-muted/50"><ChevronLeft size={24} /></Button>
           <div className="relative">
             <div className="w-10 h-10 rounded-full overflow-hidden relative border-2 border-white shadow-sm bg-muted flex items-center justify-center">
@@ -534,9 +534,19 @@ function ChatsContent() {
             <div ref={messagesEndRef} />
           </div>
         </main>
-        <div className="px-4 py-2 pb-[calc(3.5rem+env(safe-area-inset-bottom))] bg-white border-t border-border shadow-[0_-10px_40px_-20px_rgba(0,0,0,0.1)] relative z-10">
-
-          <div className="flex items-center gap-3"><div className="flex-1 relative group"><Input value={inputValue} onChange={(e) => setInputValue(e.target.value)} onFocus={() => setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "auto" }), 300)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} placeholder={t('chats.placeholder')} className="pr-12 h-11 bg-muted/50 border-0 rounded-2xl font-medium px-6 text-sm" /><Popover><PopoverTrigger asChild><button className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"><Smile size={20} /></button></PopoverTrigger><PopoverContent className="w-full max-w-[280px] p-2 rounded-2xl border-0 shadow-2xl bg-white" side="top" align="end"><div className="grid grid-cols-5 gap-1">{QUICK_REACTIONS.map(reaction => { const ReactionIcon = reaction.icon; return (<button key={reaction.id} onClick={() => handleSendMessage(reaction.label)} className="w-10 h-10 flex items-center justify-center hover:bg-muted rounded-xl transition-all active:scale-90"><span className="[transform:translateZ(0)]"><ReactionIcon size={24} className={reaction.color} /></span></button>); })}</div></PopoverContent></Popover></div><Button size="icon" onClick={() => handleSendMessage()} disabled={!inputValue.trim()} className="h-11 w-11 rounded-2xl gradient-bg text-white shadow-xl shadow-primary/30 active:scale-95 transition-all"><Send size={18} className="ml-0.5" /></Button></div>
+        <div className="shrink-0 px-4 py-3 bg-white border-t border-border">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 relative">
+              <Input value={inputValue} onChange={(e) => setInputValue(e.target.value)} onFocus={() => setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "auto" }), 300)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} placeholder={t('chats.placeholder')} className="pr-12 h-11 bg-muted/50 border-0 rounded-2xl font-medium px-5 text-sm" />
+              <Popover>
+                <PopoverTrigger asChild><button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"><Smile size={20} /></button></PopoverTrigger>
+                <PopoverContent className="w-full max-w-[280px] p-2 rounded-2xl border-0 shadow-2xl bg-white" side="top" align="end">
+                  <div className="grid grid-cols-5 gap-1">{QUICK_REACTIONS.map(reaction => { const ReactionIcon = reaction.icon; return (<button key={reaction.id} onClick={() => handleSendMessage(reaction.label)} className="w-10 h-10 flex items-center justify-center hover:bg-muted rounded-xl transition-all active:scale-90"><span className="[transform:translateZ(0)]"><ReactionIcon size={24} className={reaction.color} /></span></button>); })}</div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <Button size="icon" onClick={() => handleSendMessage()} disabled={!inputValue.trim()} className="h-11 w-11 rounded-2xl gradient-bg text-white shadow-xl shadow-primary/30 active:scale-95 transition-all shrink-0"><Send size={18} className="ml-0.5" /></Button>
+          </div>
         </div>
         {selectedChat && !selectedChat.isGroup && isVideoCall && <VideoCallDialog open={isVideoCall} onOpenChange={setIsVideoCall} user={selectedChat} />}
         {selectedChat && !selectedChat.isGroup && isVoiceCall && <VoiceCallDialog open={isVoiceCall} onOpenChange={setIsVoiceCall} user={selectedChat} />}
@@ -564,7 +574,7 @@ function ChatsContent() {
       </div>
       <BottomNav />
     </>
-    );
+  );
   }
 
   return (

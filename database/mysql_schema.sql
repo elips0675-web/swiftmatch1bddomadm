@@ -330,7 +330,7 @@ CREATE TABLE contest_entries (
   user_id     INT UNSIGNED NOT NULL,
   photo_url   VARCHAR(500) NOT NULL,
   votes       INT UNSIGNED NOT NULL DEFAULT 0,
-  rank        SMALLINT UNSIGNED DEFAULT NULL,
+  `rank`      SMALLINT UNSIGNED DEFAULT NULL,
   gender      ENUM('male','female') NOT NULL,
   created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
