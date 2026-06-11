@@ -2,6 +2,8 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import jwt from 'jsonwebtoken'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import pool from './db.js'
 
 import adminDashboard from './routes/admin/dashboard.js'
@@ -12,6 +14,10 @@ import adminContent from './routes/admin/content.js'
 import adminFeatures from './routes/admin/features.js'
 import adminMessaging from './routes/admin/messaging.js'
 import adminMonetization from './routes/admin/monetization.js'
+import profileRoutes from './routes/profile.js'
+import uploadRoutes from './routes/upload.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -19,6 +25,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
 
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }))
 app.use(express.json())
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
 async function adminAuth(req, res, next) {
   const authHeader = req.headers.authorization
@@ -98,6 +105,9 @@ app.get('/api/content', async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch content' })
   }
 })
+
+app.use(profileRoutes)
+app.use(uploadRoutes)
 
 app.use('/api/admin', adminAuth)
 

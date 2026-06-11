@@ -152,7 +152,7 @@ export default function FiltersPage() {
                         onClick={() => handleInterestToggle(interest)}
                         className="rounded-full"
                     >
-                        {interest}
+                        {t(interest)}
                     </Button>
                 ))}
             </div>

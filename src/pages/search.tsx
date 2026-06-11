@@ -330,7 +330,7 @@ function SearchContent() {
                               : "bg-white/20 text-white border-white/10"
                           )}>
                             {isCommon && <Sparkles size={8} className="fill-current" />}
-                            {interest}
+                            {t(interest)}
                           </span>
                         );
                       })}

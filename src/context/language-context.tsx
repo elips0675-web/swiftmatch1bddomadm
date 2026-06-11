@@ -884,6 +884,7 @@ const translations = {
     'goal.serious_relationship': 'Серьезные отношения',
     'goal.one_night': 'Отношения на одну ночь',
     'goal.friendship': 'Дружба',
+    'goal.new_friends': 'Новые друзья',
     'goal.family_kids': 'Семья и дети',
     'goal.travel': 'Путешествия',
     'goal.co_living': 'Совместная аренда',
@@ -917,6 +918,9 @@ const translations = {
     'interest.science': 'Наука',
     'interest.history': 'История',
     'interest.architecture': 'Архитектура',
+    'interest.coffee': 'Кофе',
+    'interest.nature': 'Природа',
+    'interest.design': 'Дизайн',
 
     // Education
     'education.secondary': 'Среднее',
@@ -1932,6 +1936,7 @@ const translations = {
     'goal.serious_relationship': 'Serious relationship',
     'goal.one_night': 'Casual',
     'goal.friendship': 'Friendship',
+    'goal.new_friends': 'New friends',
     'goal.family_kids': 'Family & kids',
     'goal.travel': 'Travel',
     'goal.co_living': 'Co-living',
@@ -1965,6 +1970,9 @@ const translations = {
     'interest.science': 'Science',
     'interest.history': 'History',
     'interest.architecture': 'Architecture',
+    'interest.coffee': 'Coffee',
+    'interest.nature': 'Nature',
+    'interest.design': 'Design',
 
     // Education
     'education.secondary': 'High school',

@@ -11,6 +11,7 @@ export const DATING_GOALS: readonly string[] = [
     "goal.just_talk",
     "goal.penpal",
     "goal.dating",
+    "goal.new_friends",
     "goal.no_commitment"
 ];
 
@@ -39,6 +40,9 @@ export const INTEREST_OPTIONS: readonly string[] = [
     "interest.science",
     "interest.history",
     "interest.architecture",
+    "interest.coffee",
+    "interest.nature",
+    "interest.design",
 ];
 
 export const ZODIAC_SIGNS: readonly string[] = [

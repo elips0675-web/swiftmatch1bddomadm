@@ -26,6 +26,9 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 const BANNED_WORDS = ["Хуй"];
 
+const PROFILE_API = '/api/profile'
+const DEMO_USER_ID = 2
+
 const DEFAULT_PROFILE = {
   displayName: "Анна",
   age: 24,
@@ -44,6 +47,28 @@ const DEFAULT_PROFILE = {
   photos: [PlaceHolderImages[0].imageUrl, PlaceHolderImages[2].imageUrl, PlaceHolderImages[4].imageUrl],
 };
 
+function mapDbProfile(rows: any) {
+  if (!rows) return null
+  const p = Array.isArray(rows) ? rows[0] : rows
+  return {
+    displayName: p.display_name || p.displayName || '',
+    age: p.age || 24,
+    city: p.city || '',
+    height: p.height || 0,
+    gender: p.gender || 'female',
+    lookingFor: p.looking_for || 'male',
+    datingGoal: p.dating_goal || '',
+    zodiac: p.zodiac || '',
+    bio: p.bio || '',
+    interests: p.interests || [],
+    match: 87,
+    attachmentStyle: p.attachment_style || null,
+    birthDate: p.birth_date || '2001-08-10',
+    location: p.city || '',
+    photos: p.photos || [],
+  }
+}
+
 export default function EditProfilePage() {
   const router = useRouter();
   const { t } = useLanguage();
@@ -56,37 +81,56 @@ export default function EditProfilePage() {
   const [isGeneratingBio, setIsGeneratingBio] = useState(false);
 
   useEffect(() => {
-    const savedProfile = localStorage.getItem('userProfile');
-    let parsed: any;
-    if (savedProfile) {
+    (async () => {
       try {
-        parsed = JSON.parse(savedProfile);
-        if (parsed.interests && Array.isArray(parsed.interests)) {
-          parsed.interests = parsed.interests.filter((i: string) => !BANNED_WORDS.includes(i));
+        const res = await fetch(`${PROFILE_API}/${DEMO_USER_ID}`)
+        if (res.ok) {
+          const data = await res.json()
+          const photoUrls = (data.photos || []).map((ph: any) => ph.url)
+          setProfile(mapDbProfile(data))
+          if (photoUrls.length > 0) setPhotos(photoUrls)
+          else {
+            const saved = localStorage.getItem('userProfileGallery')
+            if (saved) try { setPhotos(JSON.parse(saved)) } catch {}
+          }
+          localStorage.setItem('userProfile', JSON.stringify(mapDbProfile(data)))
+          setIsLoading(false)
+          return
         }
-        parsed.photos = Array.isArray(parsed.photos) ? parsed.photos : [];
-        parsed.displayName = parsed.displayName || parsed.name || t('profile.someone');
-      } catch (e) {
-        console.error("Failed to parse profile", e);
+      } catch {}
+
+      const savedProfile = localStorage.getItem('userProfile');
+      let parsed: any;
+      if (savedProfile) {
+        try {
+          parsed = JSON.parse(savedProfile);
+          if (parsed.interests && Array.isArray(parsed.interests)) {
+            parsed.interests = parsed.interests.filter((i: string) => !BANNED_WORDS.includes(i));
+          }
+          parsed.photos = Array.isArray(parsed.photos) ? parsed.photos : [];
+          parsed.displayName = parsed.displayName || parsed.name || t('profile.someone');
+        } catch (e) {
+          console.error("Failed to parse profile", e);
+          parsed = { ...DEFAULT_PROFILE };
+        }
+      } else {
         parsed = { ...DEFAULT_PROFILE };
       }
-    } else {
-      parsed = { ...DEFAULT_PROFILE };
-    }
-    setProfile(parsed);
+      setProfile(parsed);
 
-    const savedPhotos = localStorage.getItem('userProfileGallery');
-    if (savedPhotos) {
-      try {
-        setPhotos(JSON.parse(savedPhotos));
-      } catch {
+      const savedPhotos = localStorage.getItem('userProfileGallery');
+      if (savedPhotos) {
+        try {
+          setPhotos(JSON.parse(savedPhotos));
+        } catch {
+          setPhotos(parsed.photos || DEFAULT_PROFILE.photos);
+        }
+      } else {
         setPhotos(parsed.photos || DEFAULT_PROFILE.photos);
       }
-    } else {
-      setPhotos(parsed.photos || DEFAULT_PROFILE.photos);
-    }
 
-    setIsLoading(false);
+      setIsLoading(false);
+    })()
   }, [t]);
 
   const handlePhotosChange = (newPhotos: string[]) => {
@@ -100,6 +144,12 @@ export default function EditProfilePage() {
       const previewUrl = URL.createObjectURL(file);
       const updated = [...photos, previewUrl];
       setPhotos(updated);
+
+      const formData = new FormData()
+      formData.append('photo', file)
+      formData.append('user_id', String(DEMO_USER_ID))
+      formData.append('sort_order', String(photos.length))
+      fetch('/api/upload', { method: 'POST', body: formData }).catch(() => {})
 
       const reader = new FileReader();
       reader.onload = () => {
@@ -143,7 +193,7 @@ export default function EditProfilePage() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (photos.length === 0) {
       toast({ title: t('toast.save_error'), description: t('toast.save_error_desc'), variant: "destructive" });
       return;
@@ -161,6 +211,27 @@ export default function EditProfilePage() {
 
     localStorage.setItem('userProfile', JSON.stringify(dataToSave));
     localStorage.setItem('userProfileGallery', JSON.stringify(photos.filter(p => !p.startsWith('blob:'))));
+
+    try {
+      await fetch(`${PROFILE_API}/${DEMO_USER_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          display_name: profile.displayName,
+          name: profile.displayName,
+          age: profile.age,
+          bio: profile.bio,
+          gender: profile.gender,
+          looking_for: profile.lookingFor,
+          dating_goal: profile.datingGoal,
+          height: profile.height,
+          city: profile.location || profile.city,
+          zodiac: profile.zodiac,
+        }),
+      })
+    } catch (e) {
+      console.error('Failed to save to API', e)
+    }
 
     toast({ title: t('toast.profile_saved'), description: t('toast.profile_saved_desc') });
     setIsSaving(false);

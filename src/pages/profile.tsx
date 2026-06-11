@@ -43,7 +43,8 @@ import { ATTACHMENT_STYLE_INFO } from "@/lib/attachment-styles";
 
 const interestIconsMap: Record<string, any> = {
   "Фотография": Camera, "Путешествия": Globe, "Кофе": Coffee, "Музыка": Music, "Спорт": Dumbbell, "Искусство": Palette, "Кино": Film, "Йога": Flower2, "Бизнес": Briefcase, "Игры": Gamepad2, "Кошки": Dog,
-  "Photography": Camera, "Travel": Globe, "Sports": Dumbbell, "Art": Palette, "Movies": Film, "Yoga": Flower2, "Business": Briefcase, "Gaming": Gamepad2, "Cats": Dog
+  "Photography": Camera, "Travel": Globe, "Sports": Dumbbell, "Art": Palette, "Movies": Film, "Yoga": Flower2, "Business": Briefcase, "Gaming": Gamepad2, "Cats": Dog,
+  "interest.photography": Camera, "interest.travel": Globe, "interest.coffee": Coffee, "interest.music": Music, "interest.sport": Dumbbell, "interest.art": Palette, "interest.movies": Film, "interest.yoga": Flower2, "interest.games": Gamepad2, "interest.animals": Dog, "interest.books": Heart, "interest.cooking": Coffee, "interest.design": Palette, "interest.nature": Flower2, "interest.fashion": Briefcase, "interest.dance": Music, "interest.tech": Briefcase, "interest.volunteering": Heart, "interest.politics": Briefcase, "interest.psychology": Heart, "interest.philosophy": Heart, "interest.meditation": Flower2, "interest.gardening": Flower2, "interest.cars": Briefcase, "interest.science": Briefcase, "interest.history": Heart, "interest.architecture": Briefcase
 };
 
 const BANNED_WORDS = ["Хуй"];
@@ -77,6 +78,31 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setIsMounted(true);
+
+    (async () => {
+      try {
+        const res = await fetch('/api/profile/2')
+        if (res.ok) {
+          const data = await res.json()
+          setProfile({
+            displayName: data.display_name || t('profile.someone'),
+            age: data.age || 24,
+            city: data.city || 'Москва',
+            height: data.height || 172,
+            gender: data.gender || 'female',
+            lookingFor: data.looking_for || 'male',
+            datingGoal: data.dating_goal || '',
+            zodiac: data.zodiac || '',
+            bio: data.bio || '',
+            interests: data.interests || [],
+            match: 87,
+            attachmentStyle: data.attachment_style || null,
+          })
+          return
+        }
+      } catch {}
+    })()
+
     const savedProfile = localStorage.getItem('userProfile');
     if (savedProfile) {
       try {
@@ -84,7 +110,7 @@ export default function ProfilePage() {
         if (parsed.interests && Array.isArray(parsed.interests)) {
             parsed.interests = parsed.interests.filter((i: string) => !BANNED_WORDS.includes(i));
         }
-        setProfile({
+        setProfile(prev => prev?.displayName ? prev : {
           ...parsed,
           displayName: parsed.displayName || parsed.name || t('profile.someone'),
           lookingFor: parsed.gender === 'female' ? 'male' : parsed.lookingFor,
@@ -93,30 +119,42 @@ export default function ProfilePage() {
         console.error("Failed to parse profile", e);
       }
     } else {
-      setProfile({
+      setProfile(prev => prev?.displayName ? prev : {
         displayName: "Анна",
         age: 24,
         city: "Москва",
         height: 172,
         gender: "female",
         lookingFor: "male",
-        datingGoal: "Серьезные отношения",
-        zodiac: "Лев",
+        datingGoal: "goal.serious_relationship",
+        zodiac: "common.zodiac.leo",
         bio: "Люблю закаты, хороший кофе и интересные разговоры.",
-        interests: ["Фотография", "Путешествия", "Кофе", "Музыка", "Спорт"].filter(i => !BANNED_WORDS.includes(i)),
+        interests: ["interest.photography", "interest.travel", "interest.coffee", "interest.music", "interest.sport"].filter(i => !BANNED_WORDS.includes(i)),
         match: 87,
         attachmentStyle: null,
       });
     }
     
-    const savedPhotos = localStorage.getItem('userProfileGallery');
-    if (savedPhotos) {
-      setPhotos(JSON.parse(savedPhotos));
-    } else {
-      const defaultPhotos = [PlaceHolderImages[0].imageUrl, PlaceHolderImages[2].imageUrl, PlaceHolderImages[4].imageUrl];
-      setPhotos(defaultPhotos);
-      localStorage.setItem('userProfileGallery', JSON.stringify(defaultPhotos));
-    }
+    (async () => {
+      try {
+        const res = await fetch('/api/photos/2')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.length > 0) {
+            setPhotos(data.map((p: any) => p.url))
+            return
+          }
+        }
+      } catch {}
+      const savedPhotos = localStorage.getItem('userProfileGallery');
+      if (savedPhotos) {
+        setPhotos(JSON.parse(savedPhotos));
+      } else {
+        const defaultPhotos = [PlaceHolderImages[0].imageUrl, PlaceHolderImages[2].imageUrl, PlaceHolderImages[4].imageUrl];
+        setPhotos(defaultPhotos);
+        localStorage.setItem('userProfileGallery', JSON.stringify(defaultPhotos));
+      }
+    })()
 
     const savedStories = localStorage.getItem('userProfileStories');
     if (savedStories) {
@@ -438,7 +476,7 @@ export default function ProfilePage() {
                       <span className="text-[10px] font-black uppercase text-muted-foreground ml-1">{t('profile.label.goal')}</span>
                       <Badge variant="secondary" className="w-full justify-start py-2 px-3 rounded-lg bg-primary/5 border-0 font-bold text-[11px] gap-2 text-primary">
                         <Target size={12} />
-                        {profile.datingGoal}
+                        {t(profile.datingGoal)}
                       </Badge>
                     </div>
                     <div className="space-y-1">
@@ -482,7 +520,7 @@ export default function ProfilePage() {
                             <div className="flex items-center gap-3 bg-white p-3 rounded-lg shadow-sm">
                                 <div className="text-2xl">{ATTACHMENT_STYLE_INFO[profile.attachmentStyle].emoji}</div>
                                 <div>
-                                    <div className="font-bold">{ATTACHMENT_STYLE_INFO[profile.attachmentStyle].label}</div>
+                                    <div className="font-bold">{t(ATTACHMENT_STYLE_INFO[profile.attachmentStyle].labelKey)}</div>
                                     <p className="text-xs text-muted-foreground">{t('profile.retake_test_desc')}</p>
                                 </div>
                             </div>
@@ -635,7 +673,7 @@ export default function ProfilePage() {
                                       {Math.round(progress)}%
                                   </span>
                               </div>
-                                  <span className="text-white/80 text-[10px] mt-2 font-semibold uppercase tracking-wider">{t('loading')}</span>
+                                  <span className="text-white/80 text-[10px] mt-2 font-semibold uppercase tracking-wider">{t('common.loading')}</span>
                           </div>
                         )}
                       </div>
