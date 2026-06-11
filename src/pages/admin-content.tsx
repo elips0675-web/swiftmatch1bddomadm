@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useLanguage } from '@/context/language-context';
 import { invalidateContentCache, useContentConfig } from '@/lib/useContentConfig';
 import { exportToCsv } from '@/lib/admin-mock-data';
+import { getToken } from '@/lib/token';
 
 interface EditableListProps {
   items: string[];
@@ -80,7 +81,7 @@ function stripPrefix(item: string): string {
 }
 
 async function saveSection(section: string, items: string[]) {
-  const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token')
+  const token = getToken()
   const cleanItems = items.map(stripPrefix)
   const res = await fetch(`/api/admin/content/${section}`, {
     method: 'PUT',
