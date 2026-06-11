@@ -19,8 +19,22 @@ interface EditableListProps {
   saving: boolean;
 }
 
+function itemLabel(item: string, section: string, t: any, lang: string): string {
+  if (section === 'cities' || section === 'banned_words') return item
+  if (lang !== 'RU') return item
+  const prefix =
+    section === 'interests' ? 'interest'
+    : section === 'goals' ? 'goal'
+    : section === 'education' ? 'education'
+    : null
+  if (!prefix) return item
+  const key = `${prefix}.${item}`
+  const translated = t(key)
+  return translated !== key ? translated : item
+}
+
 function EditableList({ items, onAdd, onDelete, nounKey, section, saving }: EditableListProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [newItem, setNewItem] = useState('');
   const handleAdd = () => {
     const trimmed = newItem.trim();
@@ -41,7 +55,7 @@ function EditableList({ items, onAdd, onDelete, nounKey, section, saving }: Edit
       <div className="flex flex-wrap gap-2 p-4 rounded-2xl border bg-muted/30 min-h-[120px]">
         {items.map((item) => (
           <Badge key={item} variant="secondary" className="text-sm py-1.5 px-3 flex items-center gap-2 border bg-background shadow-sm">
-            {t(item)}
+            {itemLabel(item, section, t, language)}
             <button onClick={() => onDelete(item)} className="text-muted-foreground hover:text-destructive transition-colors">
               <Trash2 size={13} />
             </button>
