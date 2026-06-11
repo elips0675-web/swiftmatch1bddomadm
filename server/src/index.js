@@ -66,7 +66,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const user = rows[0]
-    const bcrypt = await import('bcryptjs')
+    const { default: bcrypt } = await import('bcryptjs')
     const valid = await bcrypt.compare(password, user.password_hash)
     if (!valid) {
       return res.status(401).json({ message: 'Invalid credentials' })
