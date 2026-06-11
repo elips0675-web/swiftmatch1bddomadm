@@ -76,32 +76,37 @@ export default function ProfilePage() {
   // Boost Dialog
   const [isBoostDialogOpen, setIsBoostDialogOpen] = useState(false);
 
+function normalizeInterests(interests: any): string[] {
+  if (!Array.isArray(interests)) return []
+  if (interests.length === 0) return []
+  if (typeof interests[0] === 'string') return interests.filter((i: string) => !BANNED_WORDS.includes(i))
+  const nameToKey: Record<string, string> = {
+    'Спорт': 'interest.sport', 'Музыка': 'interest.music', 'Фотография': 'interest.photography',
+    'Путешествия': 'interest.travel', 'Кофе': 'interest.coffee', 'Искусство': 'interest.art',
+    'Кино': 'interest.movies', 'Йога': 'interest.yoga', 'Бизнес': 'interest.business',
+    'Игры': 'interest.games', 'Кошки': 'interest.animals', 'Чтение': 'interest.books',
+    'Кулинария': 'interest.cooking', 'Творчество': 'interest.art', 'Природа': 'interest.nature',
+    'Рукоделие': 'interest.art', 'Дизайн': 'interest.design', 'Мода': 'interest.fashion',
+    'Танцы': 'interest.dance', 'Технологии': 'interest.tech', 'Волонтерство': 'interest.volunteering',
+    'Политика': 'interest.politics', 'Психология': 'interest.psychology', 'Философия': 'interest.philosophy',
+    'Медитация': 'interest.meditation', 'Садоводство': 'interest.gardening', 'Автомобили': 'interest.cars',
+    'Наука': 'interest.science', 'История': 'interest.history', 'Архитектура': 'interest.architecture',
+    'Sports': 'interest.sport', 'Music': 'interest.music', 'Photography': 'interest.photography',
+    'Travel': 'interest.travel', 'Coffee': 'interest.coffee', 'Art': 'interest.art',
+    'Movies': 'interest.movies', 'Yoga': 'interest.yoga', 'Business': 'interest.business',
+    'Gaming': 'interest.games', 'Cats': 'interest.animals', 'Books': 'interest.books',
+    'Cooking': 'interest.cooking', 'Nature': 'interest.nature', 'Design': 'interest.design',
+    'Fashion': 'interest.fashion', 'Dance': 'interest.dance',
+  }
+  return interests.map((i: any) => {
+    if (typeof i === 'string') return i
+    const ru = i.name_ru || i.name_en
+    return nameToKey[ru] || ru
+  }).filter((i: string) => !BANNED_WORDS.includes(i))
+}
+
   useEffect(() => {
     setIsMounted(true);
-
-    (async () => {
-      try {
-        const res = await fetch('/api/profile/2')
-        if (res.ok) {
-          const data = await res.json()
-          setProfile({
-            displayName: data.display_name || t('profile.someone'),
-            age: data.age || 24,
-            city: data.city || 'Москва',
-            height: data.height || 172,
-            gender: data.gender || 'female',
-            lookingFor: data.looking_for || 'male',
-            datingGoal: data.dating_goal || '',
-            zodiac: data.zodiac || '',
-            bio: data.bio || '',
-            interests: data.interests || [],
-            match: 87,
-            attachmentStyle: data.attachment_style || null,
-          })
-          return
-        }
-      } catch {}
-    })()
 
     const savedProfile = localStorage.getItem('userProfile');
     if (savedProfile) {
@@ -110,7 +115,7 @@ export default function ProfilePage() {
         if (parsed.interests && Array.isArray(parsed.interests)) {
             parsed.interests = parsed.interests.filter((i: string) => !BANNED_WORDS.includes(i));
         }
-        setProfile(prev => prev?.displayName ? prev : {
+        setProfile({
           ...parsed,
           displayName: parsed.displayName || parsed.name || t('profile.someone'),
           lookingFor: parsed.gender === 'female' ? 'male' : parsed.lookingFor,
@@ -119,7 +124,7 @@ export default function ProfilePage() {
         console.error("Failed to parse profile", e);
       }
     } else {
-      setProfile(prev => prev?.displayName ? prev : {
+      setProfile({
         displayName: "Анна",
         age: 24,
         city: "Москва",
@@ -134,6 +139,32 @@ export default function ProfilePage() {
         attachmentStyle: null,
       });
     }
+
+    (async () => {
+      try {
+        const res = await fetch('/api/profile/2')
+        if (res.ok) {
+          const data = await res.json()
+          const apiInterests = normalizeInterests(data.interests)
+          setProfile(prev => ({
+            ...prev,
+            displayName: data.display_name || prev?.displayName || t('profile.someone'),
+            age: data.age || prev?.age || 24,
+            city: data.city || prev?.city || 'Москва',
+            height: data.height || prev?.height || 172,
+            gender: data.gender || prev?.gender || 'female',
+            lookingFor: data.looking_for || prev?.lookingFor || 'male',
+            datingGoal: data.dating_goal || prev?.datingGoal || '',
+            zodiac: data.zodiac || prev?.zodiac || '',
+            bio: data.bio || prev?.bio || '',
+            interests: apiInterests.length > 0 ? apiInterests : prev?.interests || [],
+            match: prev?.match || 87,
+            attachmentStyle: data.attachment_style || prev?.attachmentStyle || null,
+          }))
+          return
+        }
+      } catch {}
+    })()
     
     (async () => {
       try {
