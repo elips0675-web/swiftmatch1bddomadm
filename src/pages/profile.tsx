@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "@/shims/next-navigation";
-import { Settings, CircleCheck as CheckCircle2, Camera, Coffee, Music, Globe, Dumbbell, CreditCard as Edit2, Palette, Film, Flower2, Briefcase, Gamepad2, Dog, Ruler, Target, User, Info, Trophy, Heart, VenetianMask, Search, Maximize2, Trash2, X, Star, Check, CircleHelp as HelpCircle, Rocket, CreditCard, Video, BrainCircuit, Users, Plus, ChevronRight } from "lucide-react";
+import { Settings, CircleCheck as CheckCircle2, Camera, Coffee, Music, Globe, Dumbbell, Edit2, Palette, Film, Flower2, Briefcase, Gamepad2, Dog, Ruler, Target, User, Info, Trophy, Heart, VenetianMask, Search, Maximize2, Trash2, X, Star, Check, CircleHelp as HelpCircle, Rocket, CreditCard, Video, BrainCircuit, Users, ChevronRight } from "lucide-react";
 import Image from "@/shims/next-image";
 import Link from "@/shims/next-link";
 import { BottomNav } from "@/components/navigation/bottom-nav";
@@ -164,7 +164,7 @@ function normalizeInterests(interests: any): string[] {
           return
         }
       } catch {}
-    })()
+    })();
     
     (async () => {
       try {
@@ -185,7 +185,7 @@ function normalizeInterests(interests: any): string[] {
         setPhotos(defaultPhotos);
         localStorage.setItem('userProfileGallery', JSON.stringify(defaultPhotos));
       }
-    })()
+    })();
 
     const savedStories = localStorage.getItem('userProfileStories');
     if (savedStories) {
