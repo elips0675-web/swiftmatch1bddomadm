@@ -112,6 +112,7 @@ export default function ContentManagementPage() {
   const [expandedCountry, setExpandedCountry] = useState<string | null>(null);
   const [newCountryName, setNewCountryName] = useState('');
   const [newCityForCountry, setNewCityForCountry] = useState('');
+  const [newEducationItem, setNewEducationItem] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -135,6 +136,15 @@ export default function ContentManagementPage() {
     setCountriesCities(data);
     localStorage.setItem('swiftmatch_countries_cities', JSON.stringify(data));
   }
+
+  const handleAddEducation = () => {
+    const trimmed = stripPrefix(newEducationItem.trim());
+    const stripped = education.map(stripPrefix);
+    if (trimmed && !stripped.includes(trimmed)) {
+      setEducation(p => [...p, trimmed].sort((a, b) => a.localeCompare(b)));
+      setNewEducationItem('');
+    }
+  };
 
   const handleSave = async (section: string, items: string[], setter: (v: string[]) => void) => {
     setSaving(section)
@@ -187,9 +197,22 @@ export default function ContentManagementPage() {
               </div>
             </TabsContent>
             <TabsContent value="education">
-              <EditableList items={education} nounKey="education" section="education" saving={saving === 'education'} onAdd={i => setEducation(p => [...p, i])} onDelete={i => setEducation(p => { const next = p.filter(x => x !== i); handleSave('education', next, setEducation); return next })} />
-              <div className="mt-2 flex justify-end">
-                <Button size="sm" onClick={() => handleSave('education', education, setEducation)} disabled={saving === 'education'}>{saving === 'education' ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null} Сохранить</Button>
+              <div className="flex flex-wrap gap-2 p-4 rounded-2xl border bg-muted/30 min-h-[120px]">
+                {education.map((item) => (
+                  <Badge key={item} variant="secondary" className="bg-muted/50 text-foreground/80 border-0 gap-2 py-2 px-3 font-bold text-[11px] rounded-lg shadow-sm whitespace-nowrap">
+                    {itemLabel(item, 'education', t)}
+                    <button onClick={() => { const next = education.filter(x => x !== item); handleSave('education', next, setEducation); }} className="text-muted-foreground hover:text-destructive transition-colors">
+                      <Trash2 size={12} />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex items-center gap-3 mt-4">
+                <Input placeholder={t('admin.content.new_placeholder')} value={newEducationItem} onChange={e => setNewEducationItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddEducation()} className="h-10 rounded-xl" />
+                <Button onClick={handleAddEducation} disabled={!newEducationItem.trim() || saving === 'education'} className="rounded-xl h-10 px-6">
+                  {saving === 'education' ? <Loader2 size={16} className="animate-spin mr-1" /> : <Plus size={16} className="mr-1" />}
+                  {t('admin.content.add')}
+                </Button>
               </div>
             </TabsContent>
             <TabsContent value="cities">
