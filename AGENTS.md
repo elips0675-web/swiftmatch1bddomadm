@@ -37,3 +37,24 @@ This ensures:
 | `chats.theme.*` | `chats.tsx` → `CHAT_THEMES` | `"chats.theme.romantic"` |
 
 RU translations live in `language-context.tsx` lines 12–931, EN at lines 935–1980.
+
+## CRITICAL: Don't break admin save / auth
+
+- Admin save (`PUT /api/admin/content/:section`) goes through `adminAuth` middleware in `server/src/index.js`
+- NEVER add auth checks to admin routes (`/api/admin/*`) — the project uses dev-login auto-auth
+- `AdminGuard` in `src/components/shared/admin-guard.tsx` must ALWAYS try `dev-login` when Supabase is absent
+- **Do NOT change badge/oval CSS in admin-content.tsx** — the user is very sensitive about this
+
+## Startup
+
+Run `запуск-всего.bat` to start everything:
+1. MySQL via Laragon `mysqld.exe`
+2. API: `node src/index.js` (port 3001)
+3. Frontend: `npx vite --port 8081 --host` (port 8081)
+
+## Common mistakes to avoid
+
+1. **Admin save 401** — admin routes require JWT. Keep `adminAuth` middleware PASSIVE (call `next()` on failure, don't block). `/api/admin/me` has its own auth check — leave it alone.
+2. **Education badge styling** — Don't change `py`, `px`, `rounded-*`, `border-*`, or any visual classes in `admin-content.tsx` unless asked. The user wants them identical to interests.
+3. **Stale token redirect loop** — When Supabase is absent, AdminGuard must ALWAYS try dev-login. The `!getToken()` guard causes redirect to `/login` if a stale token exists.
+4. **Translation keys** — DB stores slugs (`secondary`, `sport`) without prefix. Frontend adds `education.`/`interest.` prefix via `t()`. Never store Russian/English text in DB.
