@@ -451,7 +451,7 @@ export default function EditProfilePage() {
           <div className="space-y-4">
             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">{t('profile.interests')}</Label>
             <div className="flex flex-wrap gap-2">
-              {dynamicInterests.map(interest => (
+              {[...dynamicInterests].sort((a, b) => displayInterestLabel(a, t).localeCompare(displayInterestLabel(b, t))).map(interest => (
                 <Badge
                   key={interest}
                   onClick={() => toggleInterest(interest)}

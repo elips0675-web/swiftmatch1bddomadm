@@ -538,7 +538,7 @@ function normalizeInterests(interests: any): string[] {
                     </div>
                   </div>
                   <div className="pt-2 flex flex-wrap gap-2">
-                    {profile.interests?.filter((interest: string) => !BANNED_WORDS.includes(interest)).map((interest: string) => {
+                    {[...(profile.interests || [])].filter((interest: string) => !BANNED_WORDS.includes(interest)).sort((a, b) => t(a).localeCompare(t(b))).map((interest: string) => {
                       const Icon = interestIconsMap[interest] || Heart;
                       return (
                         <Badge key={interest} variant="secondary" className="bg-muted/50 text-foreground/80 border-0 gap-2 py-2 px-3 font-bold text-[11px] rounded-lg transition-all hover:bg-muted/70 shadow-sm">

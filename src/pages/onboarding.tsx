@@ -332,7 +332,7 @@ export default function OnboardingPage() {
               <p className="text-muted-foreground text-sm">{t('onboarding.step4.desc')}</p>
             </div>
             <div className="flex flex-wrap gap-2 pt-2">
-              {dynamicInterests.map(interest => (
+              {[...dynamicInterests].sort((a, b) => t(a).localeCompare(t(b))).map(interest => (
                   <Badge key={interest} onClick={() => toggleInterest(interest)} variant={formData.interests.includes(interest) ? "default" : "secondary"} className={cn("cursor-pointer px-4 py-2.5 rounded-xl transition-all border-0 font-bold text-[10px] uppercase tracking-tight shadow-sm", formData.interests.includes(interest) ? "gradient-bg text-white shadow-md" : "bg-muted text-muted-foreground hover:bg-border")}>
                     {t(interest)}
                   </Badge>

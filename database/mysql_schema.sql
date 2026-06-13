@@ -611,7 +611,7 @@ VALUES (1,
   '["sport","music","movies","books","travel","cooking","games","art","photography","tech","fashion","dance","animals","volunteering","politics","psychology","philosophy","yoga","meditation","gardening","cars","science","history","architecture"]',
   '["serious_relationship","dating","just_talk","new_friends","one_night","family_kids","travel","co_living","penpal","no_commitment"]',
   '["secondary","vocational","incomplete_higher","higher","bachelor","master","candidate","doctor"]',
-  '[]'
+  '["спам","мошенничество","фейк","скам","обман","реклама","казино","ставки","заработок","крипта","инвестиции","наркотики","закладки","продажа","куплю","порно","секс","Хуй","Пизда"]'
 ) ON DUPLICATE KEY UPDATE id=id;
 
 -- Compatibility scores

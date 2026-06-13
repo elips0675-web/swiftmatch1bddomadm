@@ -242,10 +242,10 @@ export function FiltersDialog({
                       {t('filters.interests')} {!isPro && <Lock size={12} />}
                   </Label>
                   <div className="flex flex-wrap gap-2">
-                      {dynamicInterests.map(interest => (
-                           <Badge
-                               key={interest}
-                               onClick={() => toggleInterest(interest)}
+                      {[...dynamicInterests].sort((a, b) => t(a).localeCompare(t(b))).map(interest => (
+                            <Badge
+                                key={interest}
+                                onClick={() => toggleInterest(interest)}
                                variant={selectedInterests.includes(interest) ? "default" : "secondary"}
                                className={cn(
                                    "cursor-pointer px-3 py-1.5 rounded-lg transition-all border-0 font-bold text-xs shadow-sm",

@@ -281,7 +281,7 @@ function UserProfileContent() {
                     <h4 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground/60">{t('profile.interests')}</h4>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {user.interests.map((interest) => {
+                    {[...user.interests].sort((a, b) => t(a).localeCompare(t(b))).map((interest) => {
                       const Icon = interestIcons[interest] || Heart;
                       return (
                         <Badge key={interest} variant="secondary" className="bg-muted/50 text-foreground/80 border-0 gap-2 py-2 px-4 font-bold text-[11px] rounded-lg transition-all hover:bg-muted/70 hover:translate-y-[-1px] shadow-sm">
