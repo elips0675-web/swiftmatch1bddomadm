@@ -10,8 +10,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAdmin = async () => {
       const supabase = getSupabase()
-      if (!supabase && !getToken()) {
-        // Demo mode: auto-login as admin via local API
+      if (!supabase) {
         try {
           const res = await fetch('/api/auth/dev-login', { method: 'POST' })
           if (res.ok) {
@@ -23,21 +22,6 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
         } catch {}
         setAuthorized(true)
         return
-      }
-
-      const token = getToken()
-      if (token) {
-        try {
-          const res = await fetch('/api/admin/me', {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          if (res.ok) {
-            setAuthorized(true)
-            return
-          }
-        } catch {
-          /* fall through to supabase check */
-        }
       }
 
       if (supabase) {
