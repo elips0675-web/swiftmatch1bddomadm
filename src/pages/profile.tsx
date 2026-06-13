@@ -97,10 +97,16 @@ function normalizeInterests(interests: any): string[] {
     'Gaming': 'interest.games', 'Cats': 'interest.animals', 'Books': 'interest.books',
     'Cooking': 'interest.cooking', 'Nature': 'interest.nature', 'Design': 'interest.design',
     'Fashion': 'interest.fashion', 'Dance': 'interest.dance',
+    'Tech': 'interest.tech', 'Animals': 'interest.animals', 'Volunteering': 'interest.volunteering',
+    'Politics': 'interest.politics', 'Psychology': 'interest.psychology', 'Philosophy': 'interest.philosophy',
+    'Meditation': 'interest.meditation', 'Gardening': 'interest.gardening', 'Cars': 'interest.cars',
+    'Science': 'interest.science', 'History': 'interest.history', 'Architecture': 'interest.architecture',
+    'Sport': 'interest.sport', 'Животные': 'interest.animals',
+    'Питомцы': 'interest.pets', 'Pets': 'interest.pets',
   }
   return interests.map((i: any) => {
     if (typeof i === 'string') return i
-    const ru = i.name_ru || i.name_en
+    const ru = i.name_ru && !/^\?+$/.test(i.name_ru) ? i.name_ru : i.name_en
     return nameToKey[ru] || ru
   }).filter((i: string) => !BANNED_WORDS.includes(i))
 }
@@ -112,8 +118,11 @@ function normalizeInterests(interests: any): string[] {
     if (savedProfile) {
       try {
         const parsed = JSON.parse(savedProfile);
+        if (parsed.displayName && /^\?+$/.test(parsed.displayName)) throw new Error('corrupted');
+        if (parsed.bio && /^\?+$/.test(parsed.bio)) throw new Error('corrupted');
+        if (parsed.city && /^\?+$/.test(parsed.city)) throw new Error('corrupted');
         if (parsed.interests && Array.isArray(parsed.interests)) {
-            parsed.interests = parsed.interests.filter((i: string) => !BANNED_WORDS.includes(i));
+            parsed.interests = normalizeInterests(parsed.interests);
         }
         setProfile({
           ...parsed,
@@ -146,21 +155,24 @@ function normalizeInterests(interests: any): string[] {
         if (res.ok) {
           const data = await res.json()
           const apiInterests = normalizeInterests(data.interests)
-          setProfile(prev => ({
-            ...prev,
-            displayName: data.display_name || prev?.displayName || t('profile.someone'),
-            age: data.age || prev?.age || 24,
-            city: data.city || prev?.city || 'Москва',
-            height: data.height || prev?.height || 172,
-            gender: data.gender || prev?.gender || 'female',
-            lookingFor: data.looking_for || prev?.lookingFor || 'male',
-            datingGoal: data.dating_goal || prev?.datingGoal || '',
-            zodiac: data.zodiac || prev?.zodiac || '',
-            bio: data.bio || prev?.bio || '',
-            interests: apiInterests.length > 0 ? apiInterests : prev?.interests || [],
-            match: prev?.match || 87,
-            attachmentStyle: data.attachment_style || prev?.attachmentStyle || null,
-          }))
+          setProfile(prev => {
+            const updated = {
+              displayName: data.display_name || prev?.displayName || t('profile.someone'),
+              age: data.age || prev?.age || 24,
+              city: data.city || prev?.city || 'Москва',
+              height: data.height || prev?.height || 172,
+              gender: data.gender || prev?.gender || 'female',
+              lookingFor: data.looking_for || prev?.lookingFor || 'male',
+              datingGoal: data.dating_goal || prev?.datingGoal || '',
+              zodiac: data.zodiac || prev?.zodiac || '',
+              bio: data.bio || prev?.bio || '',
+              interests: apiInterests.length > 0 ? apiInterests : prev?.interests || [],
+              match: prev?.match || 87,
+              attachmentStyle: data.attachment_style || prev?.attachmentStyle || null,
+            }
+            localStorage.setItem('userProfile', JSON.stringify(updated))
+            return { ...prev, ...updated }
+          })
           return
         }
       } catch {}

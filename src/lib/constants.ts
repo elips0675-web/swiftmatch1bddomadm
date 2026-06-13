@@ -43,6 +43,7 @@ export const INTEREST_OPTIONS: readonly string[] = [
     "interest.coffee",
     "interest.nature",
     "interest.design",
+    "interest.pets",
 ];
 
 export const ZODIAC_SIGNS: readonly string[] = [

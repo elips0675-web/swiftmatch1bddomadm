@@ -26,6 +26,17 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 const BANNED_WORDS = ["Хуй"];
 
+const INTEREST_KEY_TO_ID: Record<string, number> = {
+  'interest.sport': 1, 'interest.music': 2, 'interest.movies': 3, 'interest.books': 4,
+  'interest.travel': 5, 'interest.cooking': 6, 'interest.games': 7, 'interest.art': 8,
+  'interest.photography': 9, 'interest.tech': 10, 'interest.fashion': 11, 'interest.dance': 12,
+  'interest.animals': 13, 'interest.volunteering': 14, 'interest.politics': 15,
+  'interest.psychology': 16, 'interest.philosophy': 17, 'interest.yoga': 18,
+  'interest.meditation': 19, 'interest.gardening': 20, 'interest.cars': 21,
+  'interest.science': 22, 'interest.history': 23, 'interest.architecture': 24,
+  'interest.pets': 25,
+};
+
 const PROFILE_API = '/api/profile'
 const DEMO_USER_ID = 2
 
@@ -47,6 +58,40 @@ const DEFAULT_PROFILE = {
   photos: [PlaceHolderImages[0].imageUrl, PlaceHolderImages[2].imageUrl, PlaceHolderImages[4].imageUrl],
 };
 
+const NAME_TO_KEY: Record<string, string> = {
+  'Спорт': 'interest.sport', 'Музыка': 'interest.music', 'Фотография': 'interest.photography',
+  'Путешествия': 'interest.travel', 'Кофе': 'interest.coffee', 'Искусство': 'interest.art',
+  'Кино': 'interest.movies', 'Йога': 'interest.yoga', 'Бизнес': 'interest.business',
+  'Игры': 'interest.games', 'Кошки': 'interest.animals', 'Чтение': 'interest.books',
+  'Кулинария': 'interest.cooking', 'Творчество': 'interest.art', 'Природа': 'interest.nature',
+  'Рукоделие': 'interest.art', 'Дизайн': 'interest.design', 'Мода': 'interest.fashion',
+  'Танцы': 'interest.dance', 'Технологии': 'interest.tech', 'Волонтерство': 'interest.volunteering',
+  'Политика': 'interest.politics', 'Психология': 'interest.psychology', 'Философия': 'interest.philosophy',
+  'Медитация': 'interest.meditation', 'Садоводство': 'interest.gardening', 'Автомобили': 'interest.cars',
+  'Наука': 'interest.science', 'История': 'interest.history', 'Архитектура': 'interest.architecture',
+  'Животные': 'interest.animals',
+  'Sports': 'interest.sport', 'Music': 'interest.music', 'Photography': 'interest.photography',
+  'Travel': 'interest.travel', 'Coffee': 'interest.coffee', 'Art': 'interest.art',
+  'Movies': 'interest.movies', 'Yoga': 'interest.yoga', 'Business': 'interest.business',
+  'Gaming': 'interest.games', 'Cats': 'interest.animals', 'Books': 'interest.books',
+  'Cooking': 'interest.cooking', 'Nature': 'interest.nature', 'Design': 'interest.design',
+  'Fashion': 'interest.fashion', 'Dance': 'interest.dance',
+  'Tech': 'interest.tech', 'Animals': 'interest.animals', 'Volunteering': 'interest.volunteering',
+  'Politics': 'interest.politics', 'Psychology': 'interest.psychology', 'Philosophy': 'interest.philosophy',
+  'Meditation': 'interest.meditation', 'Gardening': 'interest.gardening', 'Cars': 'interest.cars',
+  'Science': 'interest.science', 'History': 'interest.history', 'Architecture': 'interest.architecture',
+  'Sport': 'interest.sport', 'Питомцы': 'interest.pets', 'Pets': 'interest.pets',
+}
+
+function normalizeObjectInterests(interests: any): string[] {
+  if (!Array.isArray(interests)) return []
+  return interests.map((i: any) => {
+    if (typeof i === 'string') return i
+    const name = i.name_ru && !/^\?+$/.test(i.name_ru) ? i.name_ru : i.name_en
+    return NAME_TO_KEY[name] || name
+  }).filter((i: string) => i && !BANNED_WORDS.includes(i))
+}
+
 function mapDbProfile(rows: any) {
   if (!rows) return null
   const p = Array.isArray(rows) ? rows[0] : rows
@@ -60,13 +105,22 @@ function mapDbProfile(rows: any) {
     datingGoal: p.dating_goal || '',
     zodiac: p.zodiac || '',
     bio: p.bio || '',
-    interests: p.interests || [],
+    interests: normalizeObjectInterests(p.interests),
     match: 87,
     attachmentStyle: p.attachment_style || null,
     birthDate: p.birth_date || '2001-08-10',
     location: p.city || '',
     photos: p.photos || [],
   }
+}
+
+function displayInterestLabel(key: string, t: (k: string) => string): string {
+  const translated = t(key)
+  if (translated !== key) return translated
+  for (const p of ['interest.', 'goal.', 'education.']) {
+    if (key.startsWith(p)) return key.slice(p.length)
+  }
+  return key
 }
 
 export default function EditProfilePage() {
@@ -93,7 +147,7 @@ export default function EditProfilePage() {
             const saved = localStorage.getItem('userProfileGallery')
             if (saved) try { setPhotos(JSON.parse(saved)) } catch {}
           }
-          localStorage.setItem('userProfile', JSON.stringify(mapDbProfile(data)))
+          localStorage.setItem('userProfile', JSON.stringify(mapped))
           setIsLoading(false)
           return
         }
@@ -213,6 +267,10 @@ export default function EditProfilePage() {
     localStorage.setItem('userProfileGallery', JSON.stringify(photos.filter(p => !p.startsWith('blob:'))));
 
     try {
+      const interestIds = (profile.interests || [])
+        .map((key: string) => INTEREST_KEY_TO_ID[key])
+        .filter(Boolean)
+
       await fetch(`${PROFILE_API}/${DEMO_USER_ID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -227,6 +285,7 @@ export default function EditProfilePage() {
           height: profile.height,
           city: profile.location || profile.city,
           zodiac: profile.zodiac,
+          interests: interestIds,
         }),
       })
     } catch (e) {
@@ -402,7 +461,7 @@ export default function EditProfilePage() {
                     (profile.interests || []).includes(interest) ? "gradient-bg text-white shadow-md hover:brightness-110" : "bg-muted text-muted-foreground hover:bg-border"
                   )}
                 >
-                  {t(interest)}
+                  {displayInterestLabel(interest, t)}
                 </Badge>
               ))}
             </div>

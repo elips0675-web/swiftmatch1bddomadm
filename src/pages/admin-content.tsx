@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Trash2, Package, ShieldAlert, Download, Loader2 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Plus, Trash2, Package, ShieldAlert, Download, Loader2, Globe, ChevronDown, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/context/language-context';
 import { invalidateContentCache, useContentConfig } from '@/lib/useContentConfig';
+import { POPULAR_CITIES } from '@/lib/constants';
 import { exportToCsv } from '@/lib/admin-mock-data';
 import { getToken } from '@/lib/token';
 
@@ -56,10 +58,10 @@ function EditableList({ items, onAdd, onDelete, nounKey, section, saving }: Edit
       </div>
       <div className="flex flex-wrap gap-2 p-4 rounded-2xl border bg-muted/30 min-h-[120px]">
         {items.map((item) => (
-          <Badge key={item} variant="secondary" className="text-sm py-1.5 px-3 flex items-center gap-2 border bg-background shadow-sm">
+          <Badge key={item} variant="secondary" className="text-sm py-1 px-3 flex items-center gap-2 border bg-background shadow-sm">
             {itemLabel(item, section, t)}
             <button onClick={() => onDelete(item)} className="text-muted-foreground hover:text-destructive transition-colors">
-              <Trash2 size={13} />
+              <Trash2 size={12} />
             </button>
           </Badge>
         ))}
@@ -105,6 +107,10 @@ export default function ContentManagementPage() {
   const [education, setEducation] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [forbiddenWords, setForbiddenWords] = useState<string[]>([]);
+  const [countriesCities, setCountriesCities] = useState<Record<string, string[]>>({});
+  const [expandedCountry, setExpandedCountry] = useState<string | null>(null);
+  const [newCountryName, setNewCountryName] = useState('');
+  const [newCityForCountry, setNewCityForCountry] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -114,8 +120,20 @@ export default function ContentManagementPage() {
     setEducation(config.education.map(stripPrefix));
     setCities(config.cities);
     setForbiddenWords(config.banned_words);
+
+    const stored = localStorage.getItem('swiftmatch_countries_cities');
+    if (stored) {
+      try { setCountriesCities(JSON.parse(stored)); } catch { setCountriesCities({ ...POPULAR_CITIES }); }
+    } else {
+      setCountriesCities({ ...POPULAR_CITIES });
+    }
     setLoading(false);
   }, [config]);
+
+  function saveCountriesCities(data: Record<string, string[]>) {
+    setCountriesCities(data);
+    localStorage.setItem('swiftmatch_countries_cities', JSON.stringify(data));
+  }
 
   const handleSave = async (section: string, items: string[], setter: (v: string[]) => void) => {
     setSaving(section)
@@ -148,11 +166,12 @@ export default function ContentManagementPage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="interests" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto p-1 bg-muted/50 rounded-xl mb-6">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto p-1 bg-muted/50 rounded-xl mb-6">
               <TabsTrigger value="interests" className="rounded-lg py-2 font-bold text-xs">{t('admin.content.tab_interests')} ({interests.length})</TabsTrigger>
               <TabsTrigger value="goals" className="rounded-lg py-2 font-bold text-xs">{t('admin.content.tab_goals')} ({goals.length})</TabsTrigger>
               <TabsTrigger value="education" className="rounded-lg py-2 font-bold text-xs">{t('admin.content.tab_education')} ({education.length})</TabsTrigger>
               <TabsTrigger value="cities" className="rounded-lg py-2 font-bold text-xs">{t('admin.content.tab_cities')} ({cities.length})</TabsTrigger>
+              <TabsTrigger value="banned_words" className="rounded-lg py-2 font-bold text-xs">{t('admin.content.forbidden_words')} ({forbiddenWords.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="interests">
               <EditableList items={interests} nounKey="interests" section="interests" saving={saving === 'interests'} onAdd={i => setInterests(p => [...p, i])} onDelete={i => setInterests(p => { const next = p.filter(x => x !== i); handleSave('interests', next, setInterests); return next })} />
@@ -173,24 +192,91 @@ export default function ContentManagementPage() {
               </div>
             </TabsContent>
             <TabsContent value="cities">
-              <EditableList items={cities} nounKey="cities" section="cities" saving={false} onAdd={i => setCities(p => [...p, i])} onDelete={i => setCities(p => p.filter(x => x !== i))} />
+              <div className="space-y-6">
+                <EditableList items={cities} nounKey="cities" section="cities" saving={false} onAdd={i => setCities(p => [...p, i])} onDelete={i => setCities(p => p.filter(x => x !== i))} />
+                <div className="border-t pt-6">
+                  <h4 className="text-sm font-black flex items-center gap-2 mb-4">
+                    <Globe size={16} className="text-primary" />
+                    Страны
+                  </h4>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Input placeholder="Новая страна" value={newCountryName} onChange={e => setNewCountryName(e.target.value)} className="h-10 rounded-xl" />
+                    <Button onClick={() => {
+                      const name = newCountryName.trim();
+                      if (!name || countriesCities[name]) return;
+                      saveCountriesCities({ ...countriesCities, [name]: [] });
+                      setNewCountryName('');
+                    }} disabled={!newCountryName.trim()} className="rounded-xl h-10 px-6">
+                      <Plus size={16} className="mr-1" /> Добавить
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {Object.entries(countriesCities).sort(([a], [b]) => a.localeCompare(b)).map(([country, cityList]) => (
+                      <Collapsible key={country} open={expandedCountry === country} onOpenChange={() => setExpandedCountry(expandedCountry === country ? null : country)}>
+                        <CollapsibleTrigger className="flex w-full items-center justify-between p-3 rounded-xl border bg-muted/30 hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-2 font-bold text-sm">
+                            <MapPin size={14} className="text-primary" />
+                            {country}
+                            <span className="text-xs text-muted-foreground font-normal ml-1">({cityList.length})</span>
+                          </div>
+                          <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                            <button onClick={() => {
+                              const next = { ...countriesCities };
+                              delete next[country];
+                              saveCountriesCities(next);
+                            }} className="text-muted-foreground hover:text-destructive transition-colors p-1">
+                              <Trash2 size={13} />
+                            </button>
+                            <ChevronDown size={16} className={`text-muted-foreground transition-transform ${expandedCountry === country ? 'rotate-180' : ''}`} />
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="pt-2 pl-4">
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {cityList.map(city => (
+                              <Badge key={city} variant="secondary" className="text-sm py-1 px-3 flex items-center gap-2 border bg-background shadow-sm">
+                                {city}
+                                <button onClick={() => {
+                                  saveCountriesCities({ ...countriesCities, [country]: cityList.filter(c => c !== city) });
+                                }} className="text-muted-foreground hover:text-destructive transition-colors">
+                                  <Trash2 size={12} />
+                                </button>
+                              </Badge>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Input placeholder="Новый город" value={newCityForCountry} onChange={e => setNewCityForCountry(e.target.value)} className="h-9 rounded-xl text-sm" onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                const city = newCityForCountry.trim();
+                                if (city && !cityList.includes(city)) {
+                                  saveCountriesCities({ ...countriesCities, [country]: [...cityList, city] });
+                                  setNewCityForCountry('');
+                                }
+                              }
+                            }} />
+                            <Button size="sm" onClick={() => {
+                              const city = newCityForCountry.trim();
+                              if (city && !cityList.includes(city)) {
+                                saveCountriesCities({ ...countriesCities, [country]: [...cityList, city] });
+                                setNewCityForCountry('');
+                              }
+                            }} disabled={!newCityForCountry.trim()} className="rounded-xl h-9">
+                              <Plus size={14} className="mr-1" /> Город
+                            </Button>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="banned_words">
+              <EditableList items={forbiddenWords} nounKey="words" section="banned_words" saving={saving === 'banned_words'} onAdd={w => setForbiddenWords(p => [...p, w])} onDelete={w => setForbiddenWords(p => { const next = p.filter(x => x !== w); handleSave('banned_words', next, setForbiddenWords); return next })} />
+              <div className="mt-2 flex justify-end">
+                <Button size="sm" onClick={() => handleSave('banned_words', forbiddenWords, setForbiddenWords)} disabled={saving === 'banned_words'}>{saving === 'banned_words' ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null} Сохранить</Button>
+              </div>
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
-
-      <Card className="border-0 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg font-black flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5 text-destructive" />
-            {t('admin.content.forbidden_words')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <EditableList items={forbiddenWords} nounKey="words" section="banned_words" saving={saving === 'banned_words'} onAdd={w => setForbiddenWords(p => [...p, w])} onDelete={w => setForbiddenWords(p => { const next = p.filter(x => x !== w); handleSave('banned_words', next, setForbiddenWords); return next })} />
-          <div className="mt-2 flex justify-end">
-            <Button size="sm" onClick={() => handleSave('banned_words', forbiddenWords, setForbiddenWords)} disabled={saving === 'banned_words'}>{saving === 'banned_words' ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null} Сохранить</Button>
-          </div>
         </CardContent>
       </Card>
     </div>
