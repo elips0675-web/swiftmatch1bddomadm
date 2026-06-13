@@ -58,7 +58,7 @@ function EditableList({ items, onAdd, onDelete, nounKey, section, saving }: Edit
       </div>
       <div className="flex flex-wrap gap-2 p-4 rounded-2xl border bg-muted/30 min-h-[120px]">
         {items.map((item) => (
-          <Badge key={item} variant="secondary" className="text-sm py-1.5 px-4 flex items-center gap-2 border bg-background shadow-sm">
+          <Badge key={item} variant="secondary" className="bg-muted/50 text-foreground/80 border-0 gap-2 py-2 px-3 font-bold text-[11px] rounded-lg shadow-sm">
             {itemLabel(item, section, t)}
             <button onClick={() => onDelete(item)} className="text-muted-foreground hover:text-destructive transition-colors">
               <Trash2 size={12} />
@@ -233,7 +233,7 @@ export default function ContentManagementPage() {
                         <CollapsibleContent className="pt-2 pl-4">
                           <div className="flex flex-wrap gap-2 mb-3">
                             {cityList.map(city => (
-                              <Badge key={city} variant="secondary" className="text-sm py-1.5 px-4 flex items-center gap-2 border bg-background shadow-sm">
+                              <Badge key={city} variant="secondary" className="bg-muted/50 text-foreground/80 border-0 gap-2 py-2 px-3 font-bold text-[11px] rounded-lg shadow-sm">
                                 {city}
                                 <button onClick={() => {
                                   saveCountriesCities({ ...countriesCities, [country]: cityList.filter(c => c !== city) });
