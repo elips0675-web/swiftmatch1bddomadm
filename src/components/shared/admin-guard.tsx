@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getToken } from '@/lib/token'
+import { getToken, setToken } from '@/lib/token'
 import { getSupabase } from '@/lib/supabase'
 
 export function AdminGuard({ children }: { children: React.ReactNode }) {
@@ -11,6 +11,16 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
     const checkAdmin = async () => {
       const supabase = getSupabase()
       if (!supabase && !getToken()) {
+        // Demo mode: auto-login as admin via local API
+        try {
+          const res = await fetch('/api/auth/dev-login', { method: 'POST' })
+          if (res.ok) {
+            const data = await res.json()
+            setToken(data.token)
+            setAuthorized(true)
+            return
+          }
+        } catch {}
         setAuthorized(true)
         return
       }
