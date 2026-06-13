@@ -115,9 +115,9 @@ export default function ContentManagementPage() {
   const [saving, setSaving] = useState<string | null>(null);
 
   useEffect(() => {
-    setInterests(config.interests.map(stripPrefix).sort((a, b) => a.localeCompare(b)));
+    setInterests(config.interests.map(stripPrefix));
     setGoals(config.dating_goals.map(stripPrefix));
-    setEducation(config.education.map(stripPrefix).sort((a, b) => a.localeCompare(b)));
+    setEducation(config.education.map(stripPrefix));
     setCities(config.cities);
     setForbiddenWords(config.banned_words);
 
