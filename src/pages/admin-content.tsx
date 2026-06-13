@@ -47,7 +47,7 @@ function EditableList({ items, onAdd, onDelete, nounKey, section, saving }: Edit
       setNewItem('');
     }
   };
-  const badgeClass = "text-sm py-1 px-3 flex items-center gap-1.5 border bg-background shadow-sm whitespace-nowrap rounded-full"
+  const badgeClass = "text-sm py-1 px-3 flex items-center gap-1.5 border border-orange-500 bg-background shadow-sm whitespace-nowrap rounded-full"
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold uppercase">
@@ -234,7 +234,7 @@ export default function ContentManagementPage() {
                         <CollapsibleContent className="pt-2 pl-4">
                           <div className="flex flex-wrap gap-2 mb-3">
                             {cityList.map(city => (
-                              <Badge key={city} variant="secondary" className="text-sm py-1 px-3 flex items-center gap-1.5 border bg-background shadow-sm whitespace-nowrap rounded-full">
+                              <Badge key={city} variant="secondary" className="text-sm py-1 px-3 flex items-center gap-1.5 border border-orange-500 bg-background shadow-sm whitespace-nowrap rounded-full">
                                 {city}
                                 <button onClick={() => {
                                   saveCountriesCities({ ...countriesCities, [country]: cityList.filter(c => c !== city) });
