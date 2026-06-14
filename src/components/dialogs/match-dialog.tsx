@@ -31,6 +31,12 @@ export function MatchDialog({
 
   if (!matchUser) return null;
 
+  const placeholderFor = (user: any) => {
+    const female = PlaceHolderImages[0]?.imageUrl;
+    const male = PlaceHolderImages[1]?.imageUrl;
+    return user?.gender === 'female' ? female : male;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[400px] rounded-2xl border-0 p-0 overflow-hidden bg-white app-shadow">
@@ -40,10 +46,10 @@ export function MatchDialog({
             <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
             <div className="flex items-center justify-center gap-0 relative">
               <motion.div initial={{ x: -60, opacity: 0, rotate: -15, scale: 0.8 }} animate={{ x: 0, opacity: 1, rotate: -8, scale: 1 }} transition={{ type: "spring", damping: 12, delay: 0.2 }} className="w-36 h-36 rounded-2xl border-4 border-white shadow-2xl overflow-hidden relative z-10 -mr-8 bg-muted">
-                <Image src={currentUser?.photoURL || currentUser?.img || PlaceHolderImages[1]?.imageUrl} alt="Вы" fill sizes="144px" className="object-cover" />
+                <Image src={currentUser?.photoURL || currentUser?.img || placeholderFor(currentUser)} alt="Вы" fill sizes="144px" className="object-cover" />
               </motion.div>
               <motion.div initial={{ x: 60, opacity: 0, rotate: 15, scale: 0.8 }} animate={{ x: 0, opacity: 1, rotate: 8, scale: 1 }} transition={{ type: "spring", damping: 12, delay: 0.3 }} className="w-36 h-36 rounded-2xl border-4 border-white shadow-2xl overflow-hidden relative z-0 bg-muted">
-                <Image src={matchUser?.img || PlaceHolderImages[0]?.imageUrl} alt={matchUser?.name || "Matched user photo"} fill sizes="144px" className="object-cover" />
+                <Image src={matchUser?.img || placeholderFor(matchUser)} alt={matchUser?.name || "Matched user photo"} fill sizes="144px" className="object-cover" />
               </motion.div>
             </div>
           </div>

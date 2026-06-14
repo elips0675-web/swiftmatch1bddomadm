@@ -16,6 +16,7 @@ import adminContent from './routes/admin/content.js'
 import adminFeatures from './routes/admin/features.js'
 import adminMessaging from './routes/admin/messaging.js'
 import adminMonetization from './routes/admin/monetization.js'
+import adminMedia from './routes/admin/media.js'
 import profileRoutes from './routes/profile.js'
 import uploadRoutes from './routes/upload.js'
 import authRoutes from './routes/auth.js'
@@ -198,6 +199,7 @@ app.use('/api/admin', adminContent)
 app.use('/api/admin', adminFeatures)
 app.use('/api/admin', adminMessaging)
 app.use('/api/admin', adminMonetization)
+app.use('/api/admin', adminMedia)
 
 const distPath = path.join(__dirname, '../../dist')
 app.use(express.static(distPath))

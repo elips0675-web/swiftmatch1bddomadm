@@ -142,4 +142,49 @@ router.post('/users/bulk', async (req, res) => {
   }
 })
 
+router.post('/users', async (req, res) => {
+  const { email, password, name, age, city, gender } = req.body
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password required' })
+  }
+  try {
+    const { default: bcrypt } = await import('bcryptjs')
+    const hash = await bcrypt.hash(password, 10)
+    const [result] = await pool.query(
+      'INSERT INTO users (email, password_hash, role, is_active) VALUES (?, ?, ?, 1)',
+      [email, hash, 'user'],
+    )
+    const userId = result.insertId
+    if (name || age || city || gender) {
+      await pool.query(
+        'INSERT INTO user_profiles (id, display_name, age, city, gender) VALUES (?, ?, ?, ?, ?)',
+        [userId, name || email, age || 18, city || '', gender || 'male'],
+      )
+    }
+    res.json({ id: userId, email, message: 'User created' })
+  } catch (err) {
+    console.error('Create user error:', err)
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'Email already exists' })
+    }
+    res.status(500).json({ message: 'Failed to create user' })
+  }
+})
+
+router.post('/users/:id/reset-password', async (req, res) => {
+  const { password } = req.body
+  if (!password || password.length < 4) {
+    return res.status(400).json({ message: 'Password must be at least 4 characters' })
+  }
+  try {
+    const { default: bcrypt } = await import('bcryptjs')
+    const hash = await bcrypt.hash(password, 10)
+    await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, req.params.id])
+    res.json({ message: 'Password updated' })
+  } catch (err) {
+    console.error('Reset password error:', err)
+    res.status(500).json({ message: 'Failed to reset password' })
+  }
+})
+
 export default router

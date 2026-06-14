@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Search, MoveHorizontal as MoreHorizontal, Download, ChevronLeft, ChevronRight, Ban, Trash2, TriangleAlert as AlertTriangle, UserCheck, RefreshCw } from "lucide-react";
+import { Search, MoveHorizontal as MoreHorizontal, Download, ChevronLeft, ChevronRight, Ban, Trash2, TriangleAlert as AlertTriangle, UserCheck, RefreshCw, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { exportToCsv } from "@/lib/admin-mock-data";
 import { getToken } from "@/lib/token";
@@ -62,6 +63,35 @@ export default function AdminUsersPage() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [drawerUser, setDrawerUser] = useState<AdminUser | null>(null);
   const [cities, setCities] = useState<string[]>([]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState({ email: '', password: 'qweasdzxc123456', name: '', age: 25, city: '', gender: 'male' });
+  const [creating, setCreating] = useState(false);
+
+  const handleCreateUser = async () => {
+    if (!createForm.email) return;
+    setCreating(true);
+    try {
+      const token = getToken();
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(createForm),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.message || 'Failed to create user');
+        return;
+      }
+      toast.success(`User ${createForm.email} created`);
+      setShowCreate(false);
+      setCreateForm({ email: '', password: 'qweasdzxc123456', name: '', age: 25, city: '', gender: 'male' });
+      fetchUsers();
+    } catch {
+      toast.error('Failed to create user');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -172,6 +202,23 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleResetPassword = async (userId: number) => {
+    const password = prompt('Enter new password (min 4 chars):', 'qweasdzxc123456');
+    if (!password || password.length < 4) return;
+    try {
+      const token = getToken();
+      const res = await fetch(`/api/admin/users/${userId}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ password }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success('Password reset successfully');
+    } catch {
+      toast.error('Failed to reset password');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3 items-center">
@@ -211,6 +258,9 @@ export default function AdminUsersPage() {
         </Button>
         <Button variant="outline" size="sm" onClick={fetchUsers} className="rounded-xl h-10" disabled={loading}>
           <RefreshCw size={14} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
+        <Button size="sm" onClick={() => setShowCreate(true)} className="rounded-xl h-10 bg-primary text-white">
+          <UserPlus size={14} className="mr-2" /> Create User
         </Button>
       </div>
 
@@ -278,6 +328,7 @@ export default function AdminUsersPage() {
                         <DropdownMenuItem onClick={() => handleBanToggle(user.id, user.status === 'banned')}>
                           {user.status === 'banned' ? t('admin.users.unblock') : t('admin.users.block')}
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleResetPassword(user.id)}>Reset Password</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(user.id)}>
                           {t('admin.users.delete')}
@@ -353,6 +404,57 @@ export default function AdminUsersPage() {
           )}
         </SheetContent>
       </Sheet>
+
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Create User</DialogTitle>
+            <DialogDescription>Create a test user (simulates registration)</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-bold text-muted-foreground">Email *</label>
+              <Input value={createForm.email} onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))} placeholder="test@mail.ru" />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-muted-foreground">Password</label>
+              <Input value={createForm.password} onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-muted-foreground">Name</label>
+                <Input value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} placeholder="Test User" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-muted-foreground">Age</label>
+                <Input type="number" value={createForm.age} onChange={e => setCreateForm(f => ({ ...f, age: parseInt(e.target.value) || 18 }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-muted-foreground">City</label>
+                <Input value={createForm.city} onChange={e => setCreateForm(f => ({ ...f, city: e.target.value }))} placeholder="Moscow" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-muted-foreground">Gender</label>
+                <Select value={createForm.gender} onValueChange={v => setCreateForm(f => ({ ...f, gender: v }))}>
+                  <SelectTrigger className="h-10 rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button onClick={handleCreateUser} disabled={creating || !createForm.email}>
+              {creating ? 'Creating...' : 'Create User'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
