@@ -27,7 +27,6 @@ function itemLabel(item: string, section: string, t: any): string {
   const prefix =
     section === 'interests' ? 'interest.'
     : section === 'goals' ? 'goal.'
-    : section === 'education' ? 'education.'
     : null
   if (!prefix) return item
   const raw = item.startsWith(prefix) ? item.slice(prefix.length) : item
@@ -56,9 +55,9 @@ function EditableList({ items, onAdd, onDelete, nounKey, section, saving }: Edit
           toast.success(t('admin.content.csv_downloaded'));
         }}><Download size={12} className="mr-1" /> CSV</Button>
       </div>
-      <div className="flex flex-wrap gap-2 p-4 rounded-2xl border bg-muted/30 min-h-[120px]">
+      <div className="flex flex-wrap gap-2 p-4 rounded-2xl border bg-muted/30 min-h-[120px] content-start">
         {items.map((item) => (
-          <Badge key={item} variant="secondary" className="text-sm py-1 px-3 flex items-center gap-2 border bg-background shadow-sm">
+          <Badge key={item} variant="secondary" className="text-sm py-0.5 px-3 flex items-center gap-2 border bg-background shadow-sm">
             {itemLabel(item, section, t)}
             <button onClick={() => onDelete(item)} className="text-muted-foreground hover:text-destructive transition-colors">
               <Trash2 size={12} />
@@ -82,6 +81,46 @@ function stripPrefix(item: string): string {
     if (item.startsWith(p)) return item.slice(p.length)
   }
   return item
+}
+
+function EducationList({ items, onAdd, onDelete, saving }: { items: string[], onAdd: (item: string) => void, onDelete: (item: string) => void, saving: boolean }) {
+  const { t } = useLanguage();
+  const [newItem, setNewItem] = useState('');
+  const handleAdd = () => {
+    const trimmed = newItem.trim();
+    if (trimmed && !items.includes(`education.${trimmed}`)) {
+      onAdd(trimmed);
+      setNewItem('');
+    }
+  };
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold uppercase">
+        <span>{t('admin.content.total')}: {items.length}</span>
+        <Button variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={() => {
+          exportToCsv('education.csv', items.map(i => ({ education: i })));
+          toast.success(t('admin.content.csv_downloaded'));
+        }}><Download size={12} className="mr-1" /> CSV</Button>
+      </div>
+      <div className="flex flex-wrap gap-2 p-4 rounded-2xl border bg-muted/30 min-h-[120px] content-start">
+        {items.map((item) => (
+          <Badge key={item} variant="secondary" className="text-sm py-0.5 px-3 flex items-center gap-2 border bg-background shadow-sm">
+            {t(item)}
+            <button onClick={() => onDelete(item)} className="text-muted-foreground hover:text-destructive transition-colors">
+              <Trash2 size={12} />
+            </button>
+          </Badge>
+        ))}
+      </div>
+      <div className="flex items-center gap-3">
+        <Input placeholder={t('admin.content.new_placeholder')} value={newItem} onChange={e => setNewItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAdd()} className="h-10 rounded-xl" />
+        <Button onClick={handleAdd} disabled={!newItem.trim() || saving} className="rounded-xl h-10 px-6">
+          {saving ? <Loader2 size={16} className="animate-spin mr-1" /> : <Plus size={16} className="mr-1" />}
+          {t('admin.content.add')}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 async function saveSection(section: string, items: string[]) {
@@ -117,7 +156,7 @@ export default function ContentManagementPage() {
   useEffect(() => {
     setInterests(config.interests.map(stripPrefix).sort((a, b) => t(`interest.${a}`).localeCompare(t(`interest.${b}`))));
     setGoals(config.dating_goals.map(stripPrefix));
-    setEducation(config.education.map(stripPrefix));
+    setEducation([...config.education].sort((a, b) => a.localeCompare(b)));
     setCities([...config.cities].sort((a, b) => a.localeCompare(b)));
     setForbiddenWords([...config.banned_words].sort((a, b) => a.localeCompare(b)));
 
@@ -186,9 +225,9 @@ export default function ContentManagementPage() {
               </div>
             </TabsContent>
             <TabsContent value="education">
-              <EditableList items={education} nounKey="education" section="education" saving={saving === 'education'} onAdd={i => setEducation(p => [...p, i].sort((a, b) => a.localeCompare(b)))} onDelete={i => setEducation(p => { const next = p.filter(x => x !== i); handleSave('education', next, setEducation); return next })} />
+              <EducationList items={education} saving={saving === 'education'} onAdd={i => setEducation(p => [...p, `education.${i}`].sort((a, b) => a.localeCompare(b)))} onDelete={i => setEducation(p => { const next = p.filter(x => x !== i); handleSave('education', next.map(stripPrefix), setEducation); return next })} />
               <div className="mt-2 flex justify-end">
-                <Button size="sm" onClick={() => handleSave('education', education, setEducation)} disabled={saving === 'education'}>{saving === 'education' ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null} Сохранить</Button>
+                <Button size="sm" onClick={() => handleSave('education', education.map(stripPrefix), setEducation)} disabled={saving === 'education'}>{saving === 'education' ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null} Сохранить</Button>
               </div>
             </TabsContent>
             <TabsContent value="cities">
@@ -233,7 +272,7 @@ export default function ContentManagementPage() {
                         <CollapsibleContent className="pt-2 pl-4">
                           <div className="flex flex-wrap gap-2 mb-3">
                             {[...cityList].sort((a, b) => a.localeCompare(b)).map(city => (
-                              <Badge key={city} variant="secondary" className="text-sm py-1 px-3 flex items-center gap-2 border bg-background shadow-sm">
+                              <Badge key={city} variant="secondary" className="text-sm py-0.5 px-3 flex items-center gap-2 border bg-background shadow-sm">
                                 {city}
                                 <button onClick={() => {
                                   saveCountriesCities({ ...countriesCities, [country]: cityList.filter(c => c !== city) });
