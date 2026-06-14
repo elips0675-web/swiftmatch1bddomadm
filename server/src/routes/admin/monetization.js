@@ -39,13 +39,13 @@ router.get('/monetization/pricing', async (req, res) => {
 router.get('/monetization/revenue', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT DATE_FORMAT(created_at, '%b') as month,
+      `SELECT DATE_FORMAT(started_at, '%b') as month,
               SUM(CASE WHEN tier IS NOT NULL THEN price ELSE 0 END) as subscriptions,
               0 as ads, 0 as boosts
        FROM subscriptions
-       WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-       GROUP BY DATE_FORMAT(created_at, '%Y-%m'), DATE_FORMAT(created_at, '%b')
-       ORDER BY MIN(created_at)`,
+       WHERE started_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+       GROUP BY DATE_FORMAT(started_at, '%Y-%m'), DATE_FORMAT(started_at, '%b')
+       ORDER BY MIN(started_at)`,
     )
     res.json(rows)
   } catch (err) {
@@ -56,7 +56,7 @@ router.get('/monetization/revenue', async (req, res) => {
 
 router.get('/monetization/funnel', async (req, res) => {
   try {
-    const [[{ visitors }]] = await pool.query('SELECT COUNT(*) as visitors FROM analytics_events WHERE event_type = "visit"')
+    const visitors = 0
     const [[{ registrations }]] = await pool.query('SELECT COUNT(*) as registrations FROM users')
     const [[{ profiles }]] = await pool.query('SELECT COUNT(*) as profiles FROM user_profiles')
     const [[{ firstLike }]] = await pool.query('SELECT COUNT(DISTINCT from_user_id) as firstLike FROM likes')

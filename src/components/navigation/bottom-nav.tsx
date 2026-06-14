@@ -1,43 +1,17 @@
-import { useState, useEffect } from "react";
 import Link from "@/shims/next-link";
 import { usePathname } from "@/shims/next-navigation";
-import { Chrome as Home, Search, Users, Bell, MessageCircle, User } from "lucide-react";
+import { Chrome as Home, Search, Users, MessageCircle, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getToken } from "@/lib/token";
 import { useLanguage } from "@/context/language-context";
 
 export function BottomNav() {
   const pathname = usePathname();
   const { t } = useLanguage();
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    const controller = new AbortController();
-    fetch('/api/notifications', {
-      signal: controller.signal,
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => r.json())
-      .then(data => setUnreadCount(data.filter((n: any) => !n.is_read).length))
-      .catch(() => {});
-    const interval = setInterval(() => {
-      fetch('/api/notifications', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then(r => r.json())
-        .then(data => setUnreadCount(data.filter((n: any) => !n.is_read).length))
-        .catch(() => {});
-    }, 30000);
-    return () => { controller.abort(); clearInterval(interval) };
-  }, []);
 
   const navItems = [
     { href: "/", label: t('nav.home'), icon: Home },
     { href: "/search", label: t('nav.search'), icon: Search },
     { href: "/groups", label: t('nav.groups'), icon: Users },
-    { href: "/notifications", label: t('nav.notifications') || 'Уведомления', icon: Bell, badge: unreadCount },
     { href: "/chats", label: t('nav.chats'), icon: MessageCircle },
     { href: "/profile", label: t('nav.profile'), icon: User },
   ];
