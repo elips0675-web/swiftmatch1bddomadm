@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Link from "@/shims/next-link";
 import { usePathname } from "@/shims/next-navigation";
-import { Chrome as Home, Search, Bell, MessageCircle, User } from "lucide-react";
+import { Chrome as Home, Search, Users, Bell, MessageCircle, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getToken } from "@/lib/token";
 import { useLanguage } from "@/context/language-context";
@@ -36,6 +36,7 @@ export function BottomNav() {
   const navItems = [
     { href: "/", label: t('nav.home'), icon: Home },
     { href: "/search", label: t('nav.search'), icon: Search },
+    { href: "/groups", label: t('nav.groups'), icon: Users },
     { href: "/notifications", label: t('nav.notifications') || 'Уведомления', icon: Bell, badge: unreadCount },
     { href: "/chats", label: t('nav.chats'), icon: MessageCircle },
     { href: "/profile", label: t('nav.profile'), icon: User },
