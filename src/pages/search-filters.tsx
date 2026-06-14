@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ALL_DEMO_USERS } from "@/lib/demo-data";
-import { POPULAR_CITIES } from "@/lib/constants";
+import { POPULAR_CITIES, INTEREST_OPTIONS } from "@/lib/constants";
 import { useLanguage } from "@/context/language-context";
 import { ChevronLeft } from "lucide-react";
 
@@ -23,13 +22,7 @@ export default function FiltersPage() {
   const [selectedCity, setSelectedCity] = useState("all");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
 
-  const allInterests = useMemo(() => {
-    const interests = new Set<string>();
-    ALL_DEMO_USERS.forEach(user => {
-      user.interests.forEach(interest => interests.add(interest));
-    });
-    return Array.from(interests);
-  }, []);
+  const allInterests = useMemo(() => [...INTEREST_OPTIONS], []);
 
   useEffect(() => {
     const savedFilters = localStorage.getItem("searchFilters");

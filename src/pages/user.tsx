@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, Suspense, useMemo } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "@/shims/next-navigation";
 import Image from "@/shims/next-image";
 import Link from "@/shims/next-link";
@@ -13,7 +13,7 @@ import { useLanguage } from "@/context/language-context";
 import { cn, getUserTitles } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { ALL_DEMO_USERS, POLL_QUESTIONS } from "@/lib/demo-data";
+import { POLL_QUESTIONS } from "@/lib/demo-data";
 import { getToken } from "@/lib/token";
 import { ZodiacIcon } from "@/components/shared/zodiac-icon";
 import {
@@ -68,9 +68,9 @@ function UserProfileContent() {
   const router = useRouter();
   const userId = searchParams.get('id');
   const { t, language } = useLanguage();
-  
-  const user = useMemo(() => ALL_DEMO_USERS.find(u => u.id === Number(userId)) || ALL_DEMO_USERS[1], [userId]);
-  
+
+  const [user, setUser] = useState<any>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -105,22 +105,23 @@ function UserProfileContent() {
   }, []);
 
   useEffect(() => {
-    if (user && user.isSystem) {
-      router.replace('/');
-      return;
-    }
-
-    const randomPhotos: string[] = [];
-    const available = [...PlaceHolderImages].filter(p => p.imageUrl !== user.img);
-    const count = Math.min(4, available.length);
-    
-    for(let i = 0; i < count; i++) {
-        const idx = Math.floor(Math.random() * available.length);
-        randomPhotos.push(available.splice(idx, 1)[0].imageUrl);
-    }
-
-    setPhotos([user.img, ...randomPhotos]);
-  }, [user, router]);
+    if (!userId) { router.replace('/'); return }
+    setLoadingUser(true)
+    const token = getToken()
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    fetch(`/api/users/${userId}`, { headers })
+      .then(r => r.json())
+      .then(data => {
+        if (data.message) { router.replace('/'); return }
+        setUser(data)
+        const photoUrls = data.photos?.length ? data.photos : [data.img || PlaceHolderImages[1].imageUrl]
+        while (photoUrls.length < 5) { photoUrls.push(PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)].imageUrl) }
+        setPhotos(photoUrls.slice(0, 5))
+      })
+      .catch(() => router.replace('/'))
+      .finally(() => setLoadingUser(false))
+  }, [userId, router]);
 
   const earnedTitles = useMemo(() => getUserTitles(user, language), [user, language]);
 
@@ -161,7 +162,8 @@ function UserProfileContent() {
     setReportDescription('');
   };
 
-  if (!user || user.isSystem) return null;
+  if (loadingUser) return <div className="flex-1 flex items-center justify-center h-full bg-white"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
+  if (!user) return null;
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f8f9fb]">

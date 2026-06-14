@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useMemo } from "react";
+import { getToken } from "@/lib/token";
 import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/navigation/bottom-nav";
 import { useLanguage } from "@/context/language-context";
@@ -16,25 +17,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const FEMALE_ENTRIES = [
+const FALLBACK_FEMALE = [
   { id: 'f1', userId: 'u1', userName: 'Алина', photo: PlaceHolderImages[6].imageUrl, votes: 1240, rank: 1, gender: 'female' },
   { id: 'f2', userId: 'u5', userName: 'Анна', photo: PlaceHolderImages[0].imageUrl, votes: 980, rank: 2, gender: 'female' },
   { id: 'f3', userId: 'u3', userName: 'Елена', photo: PlaceHolderImages[2].imageUrl, votes: 850, rank: 3, gender: 'female' },
 ];
 
-const MALE_ENTRIES = [
+const FALLBACK_MALE = [
   { id: 'm1', userId: 'u2', userName: 'Максим', photo: PlaceHolderImages[1].imageUrl, votes: 1100, rank: 1, gender: 'male' },
   { id: 'm2', userId: 'u8', userName: 'Иван', photo: PlaceHolderImages[7].imageUrl, votes: 950, rank: 2, gender: 'male' },
   { id: 'm3', userId: 'u4', userName: 'Дмитрий', photo: PlaceHolderImages[3].imageUrl, votes: 700, rank: 3, gender: 'male' },
 ];
 
-const PAST_FEMALE_WINNERS = [
+const FALLBACK_PAST_FEMALE = [
   { id: 'pfw1', name: 'Мария', photo: PlaceHolderImages[6].imageUrl, month: 'Апрель' },
   { id: 'pfw2', name: 'Елена', photo: PlaceHolderImages[2].imageUrl, month: 'Март' },
   { id: 'pfw3', name: 'Ксения', photo: PlaceHolderImages[8].imageUrl, month: 'Февраль' },
 ];
 
-const PAST_MALE_WINNERS = [
+const FALLBACK_PAST_MALE = [
   { id: 'pmw1', name: 'Александр', photo: PlaceHolderImages[1].imageUrl, month: 'Апрель' },
   { id: 'pmw2', name: 'Дмитрий', photo: PlaceHolderImages[3].imageUrl, month: 'Март' },
   { id: 'pmw3', name: 'Артем', photo: PlaceHolderImages[5].imageUrl, month: 'Февраль' },
@@ -45,6 +46,10 @@ export default function ContestPage() {
   const [timeLeft, setTimeLeft] = useState("");
   const [viewerPhoto, setViewerPhoto] = useState<string | null>(null);
   const [activeGender, setActiveGender] = useState<string>("female");
+  const [femaleEntries, setFemaleEntries] = useState<any[]>([]);
+  const [maleEntries, setMaleEntries] = useState<any[]>([]);
+  const [pastFemaleWinners, setPastFemaleWinners] = useState<any[]>([]);
+  const [pastMaleWinners, setPastMaleWinners] = useState<any[]>([]);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -60,13 +65,42 @@ export default function ContestPage() {
     return () => clearInterval(interval);
   }, [language, t]);
 
+  useEffect(() => {
+    const token = getToken();
+    const fetchEntries = token
+      ? fetch('/api/contest/entries', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : []).catch(() => [])
+      : Promise.resolve([]);
+    const fetchWinners = token
+      ? fetch('/api/contest/past-winners', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : []).catch(() => [])
+      : Promise.resolve([]);
+
+    Promise.all([fetchEntries, fetchWinners]).then(([entries, winners]) => {
+      if (entries.length > 0) {
+        setFemaleEntries(entries.filter((e: any) => e.gender === 'female'));
+        setMaleEntries(entries.filter((e: any) => e.gender === 'male'));
+      } else {
+        setFemaleEntries(FALLBACK_FEMALE);
+        setMaleEntries(FALLBACK_MALE);
+      }
+      if (winners.length > 0) {
+        setPastFemaleWinners(winners.filter((w: any) => w.gender === 'female'));
+        setPastMaleWinners(winners.filter((w: any) => w.gender === 'male'));
+      } else {
+        setPastFemaleWinners(FALLBACK_PAST_FEMALE);
+        setPastMaleWinners(FALLBACK_PAST_MALE);
+      }
+    });
+  }, []);
+
   const currentEntries = useMemo(() => {
-    return activeGender === "female" ? FEMALE_ENTRIES : MALE_ENTRIES;
-  }, [activeGender]);
+    const src = activeGender === "female" ? femaleEntries : maleEntries;
+    return src.length > 0 ? src : (activeGender === "female" ? FALLBACK_FEMALE : FALLBACK_MALE);
+  }, [activeGender, femaleEntries, maleEntries]);
 
   const pastWinners = useMemo(() => {
-    return activeGender === "female" ? PAST_FEMALE_WINNERS : PAST_MALE_WINNERS;
-  }, [activeGender]);
+    const src = activeGender === "female" ? pastFemaleWinners : pastMaleWinners;
+    return src.length > 0 ? src : (activeGender === "female" ? FALLBACK_PAST_FEMALE : FALLBACK_PAST_MALE);
+  }, [activeGender, pastFemaleWinners, pastMaleWinners]);
 
   const topThree = currentEntries.slice(0, 3);
 
@@ -106,7 +140,7 @@ export default function ContestPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="female" className="w-full mb-8" onValueChange={setActiveGender}>
+        <Tabs value={activeGender} onValueChange={setActiveGender} className="w-full mb-8">
           <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-2xl h-12 mb-6">
             <TabsTrigger value="female" className="rounded-xl font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">
               {t('contest.tab.women')}
@@ -116,62 +150,81 @@ export default function ContestPage() {
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value={activeGender} className="mt-0 outline-none">
+          <TabsContent value="female" className="mt-0 outline-none">
             <section className="mb-14 pt-24 relative">
               <AnimatePresence mode="wait">
-                <motion.div 
-                  key={activeGender}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex justify-center items-end gap-2 sm:gap-6 relative z-10"
-                >
-                  {/* Rank 2 */}
+                <motion.div key="female" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex justify-center items-end gap-2 sm:gap-6 relative z-10">
                   <div className="flex flex-col items-center flex-1 max-w-[120px]">
                     <div className="relative mb-3 cursor-pointer group" onClick={() => setViewerPhoto(topThree[1].photo)}>
                       <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[1.5rem] border-4 border-slate-300 shadow-xl overflow-hidden bg-muted">
                         <Image src={topThree[1].photo} alt={topThree[1].userName} fill sizes="112px" className="object-cover transition-transform group-hover:scale-110" />
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Maximize2 className="text-white" size={20} />
-                        </div>
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Maximize2 className="text-white" size={20} /></div>
                       </div>
                       <div className="absolute -top-2 -right-2 w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center text-white font-black text-sm shadow-md border-2 border-white">2</div>
                     </div>
                     <p className="font-bold text-xs truncate w-full text-center">{topThree[1].userName}</p>
                     <Badge variant="secondary" className="mt-1 bg-slate-100 text-slate-600 text-[8px] font-black">{topThree[1].votes}</Badge>
                   </div>
-
-                  {/* Rank 1 */}
                   <div className="flex flex-col items-center flex-1 max-w-[160px] -mt-12">
                     <div className="relative mb-3 cursor-pointer group" onClick={() => setViewerPhoto(topThree[0].photo)}>
-                      <motion.div
-                        animate={{ y: [0, -8, 0] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute -top-14 left-1/2 -translate-x-1/2 text-amber-500 drop-shadow-xl"
-                      >
-                        <Crown size={40} fill="currentColor" />
-                      </motion.div>
+                      <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-14 left-1/2 -translate-x-1/2 text-amber-500 drop-shadow-xl"><Crown size={40} fill="currentColor" /></motion.div>
                       <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-[2rem] border-4 border-amber-400 shadow-[0_20px_50px_rgba(251,191,36,0.3)] overflow-hidden bg-muted ring-4 ring-amber-400/20">
                         <Image src={topThree[0].photo} alt={topThree[0].userName} fill sizes="144px" className="object-cover transition-transform group-hover:scale-105" />
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Maximize2 className="text-white" size={32} />
-                        </div>
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Maximize2 className="text-white" size={32} /></div>
                       </div>
                       <div className="absolute -top-2 -right-2 w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-white font-black text-lg shadow-md border-2 border-white">1</div>
                     </div>
                     <p className="font-black text-sm truncate w-full text-center">{topThree[0].userName}</p>
                     <Badge className="mt-1 gradient-bg text-white text-[10px] font-black border-0 shadow-lg shadow-primary/20 px-3">{topThree[0].votes}</Badge>
                   </div>
-
-                  {/* Rank 3 */}
                   <div className="flex flex-col items-center flex-1 max-w-[120px]">
                     <div className="relative mb-3 cursor-pointer group" onClick={() => setViewerPhoto(topThree[2].photo)}>
                       <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[1.5rem] border-4 border-amber-700/40 shadow-xl overflow-hidden bg-muted">
                         <Image src={topThree[2].photo} alt={topThree[2].userName} fill sizes="112px" className="object-cover transition-transform group-hover:scale-110" />
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Maximize2 className="text-white" size={20} />
-                        </div>
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Maximize2 className="text-white" size={20} /></div>
+                      </div>
+                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-700/60 rounded-full flex items-center justify-center text-white font-black text-sm shadow-md border-2 border-white">3</div>
+                    </div>
+                    <p className="font-bold text-xs truncate w-full text-center">{topThree[2].userName}</p>
+                    <Badge variant="secondary" className="mt-1 bg-amber-50 text-amber-700 text-[8px] font-black">{topThree[2].votes}</Badge>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+              <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-muted/30 to-transparent -z-0 rounded-b-[3rem]"></div>
+            </section>
+          </TabsContent>
+          <TabsContent value="male" className="mt-0 outline-none">
+            <section className="mb-14 pt-24 relative">
+              <AnimatePresence mode="wait">
+                <motion.div key="male" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex justify-center items-end gap-2 sm:gap-6 relative z-10">
+                  <div className="flex flex-col items-center flex-1 max-w-[120px]">
+                    <div className="relative mb-3 cursor-pointer group" onClick={() => setViewerPhoto(topThree[1].photo)}>
+                      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[1.5rem] border-4 border-slate-300 shadow-xl overflow-hidden bg-muted">
+                        <Image src={topThree[1].photo} alt={topThree[1].userName} fill sizes="112px" className="object-cover transition-transform group-hover:scale-110" />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Maximize2 className="text-white" size={20} /></div>
+                      </div>
+                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center text-white font-black text-sm shadow-md border-2 border-white">2</div>
+                    </div>
+                    <p className="font-bold text-xs truncate w-full text-center">{topThree[1].userName}</p>
+                    <Badge variant="secondary" className="mt-1 bg-slate-100 text-slate-600 text-[8px] font-black">{topThree[1].votes}</Badge>
+                  </div>
+                  <div className="flex flex-col items-center flex-1 max-w-[160px] -mt-12">
+                    <div className="relative mb-3 cursor-pointer group" onClick={() => setViewerPhoto(topThree[0].photo)}>
+                      <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-14 left-1/2 -translate-x-1/2 text-amber-500 drop-shadow-xl"><Crown size={40} fill="currentColor" /></motion.div>
+                      <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-[2rem] border-4 border-amber-400 shadow-[0_20px_50px_rgba(251,191,36,0.3)] overflow-hidden bg-muted ring-4 ring-amber-400/20">
+                        <Image src={topThree[0].photo} alt={topThree[0].userName} fill sizes="144px" className="object-cover transition-transform group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Maximize2 className="text-white" size={32} /></div>
+                      </div>
+                      <div className="absolute -top-2 -right-2 w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-white font-black text-lg shadow-md border-2 border-white">1</div>
+                    </div>
+                    <p className="font-black text-sm truncate w-full text-center">{topThree[0].userName}</p>
+                    <Badge className="mt-1 gradient-bg text-white text-[10px] font-black border-0 shadow-lg shadow-primary/20 px-3">{topThree[0].votes}</Badge>
+                  </div>
+                  <div className="flex flex-col items-center flex-1 max-w-[120px]">
+                    <div className="relative mb-3 cursor-pointer group" onClick={() => setViewerPhoto(topThree[2].photo)}>
+                      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[1.5rem] border-4 border-amber-700/40 shadow-xl overflow-hidden bg-muted">
+                        <Image src={topThree[2].photo} alt={topThree[2].userName} fill sizes="112px" className="object-cover transition-transform group-hover:scale-110" />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Maximize2 className="text-white" size={20} /></div>
                       </div>
                       <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-700/60 rounded-full flex items-center justify-center text-white font-black text-sm shadow-md border-2 border-white">3</div>
                     </div>

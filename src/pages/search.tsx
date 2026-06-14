@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/context/language-context";
 import { toast } from "@/hooks/use-toast";
+import { getToken } from "@/lib/token";
 import { ALL_DEMO_USERS } from "@/lib/demo-data";
 import Link from "@/shims/next-link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -112,6 +113,7 @@ function SearchContent() {
   const searchParams = useSearchParams();
   const { t, language } = useLanguage();
   const [userList, setUserList] = useState<any[]>([]);
+  const [apiUsers, setApiUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pageTitle, setPageTitle] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -128,29 +130,21 @@ function SearchContent() {
   const [searchFilters, setSearchFilters] = useState(null);
 
   useEffect(() => {
+    const token = getToken();
+    if (token) {
+      fetch('/api/profile/me', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then(user => { if (user) setCurrentUser(user); })
+        .catch(() => {});
+    }
     const saved = localStorage.getItem('userProfile');
-    let userToSet;
-    if (saved) {
-      try {
-        userToSet = JSON.parse(saved);
-      } catch (e) {
-        userToSet = ALL_DEMO_USERS[0];
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved);
+      if (!token) {
+        setCurrentUser(parsed);
       }
-    } else {
-      userToSet = ALL_DEMO_USERS[0];
-    }
-    if (!userToSet.img || !userToSet.photoURL) {
-      const demoMatch = ALL_DEMO_USERS.find(u => u.name === (userToSet.displayName || userToSet.name)) || ALL_DEMO_USERS.find(u => u.gender === userToSet.gender) || ALL_DEMO_USERS[0];
-      userToSet.img = userToSet.img || demoMatch.img;
-      userToSet.photoURL = userToSet.photoURL || demoMatch.img;
-    }
-    setCurrentUser(userToSet);
-
-    const userIndex = ALL_DEMO_USERS.findIndex(u => u.id === userToSet.id);
-    if (userIndex !== -1) {
-        ALL_DEMO_USERS[userIndex] = userToSet;
-    }
-
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -158,24 +152,38 @@ function SearchContent() {
     const mode = searchParams.get('mode');
     let initialUsers: any[] = [];
     setIsLoading(true);
-    if (mode === 'autosearch') {
+
+    const token = getToken();
+    const fetchApi = token
+      ? fetch('/api/users/search', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : { users: [] }).then(d => d.users)
+      : Promise.resolve([]);
+
+    fetchApi.then(apiUsersData => {
+      if (apiUsersData.length > 0) {
+        setApiUsers(apiUsersData);
+      }
+
+      const source = apiUsersData.length > 0 ? apiUsersData : ALL_DEMO_USERS;
+
+      if (mode === 'autosearch') {
         setPageTitle(t('button.autosearch'));
         const filters = JSON.parse(sessionStorage.getItem('autosearchFilters') || 'null');
         setSearchFilters(filters);
         if (filters) {
-            setSelectedInterests(filters.selectedInterests || []);
-            initialUsers = performAutosearch(filters, ALL_DEMO_USERS, currentUser);
+          setSelectedInterests(filters.selectedInterests || []);
+          initialUsers = performAutosearch(filters, source, currentUser);
         } else {
-            initialUsers = ALL_DEMO_USERS.slice(1, 11);
+          initialUsers = source.filter((u: any) => u.id !== currentUser.id && !u.isSystem).slice(0, 10);
         }
-    } else {
+      } else {
         setPageTitle(t('home.nearby'));
-        initialUsers = ALL_DEMO_USERS.filter(u => u.id !== currentUser.id && !u.isSystem).slice(0, 10);
+        initialUsers = source.filter((u: any) => u.id !== currentUser.id && !u.isSystem).slice(0, 10);
         setSelectedInterests([]);
-    }
-    setUserList(initialUsers);
-    setCurrentIndex(0);
-    setIsLoading(false);
+      }
+      setUserList(initialUsers);
+      setCurrentIndex(0);
+      setIsLoading(false);
+    });
   }, [searchParams, currentUser, t]);
   
   const handleApplyFilters = (newFilters: any) => {
@@ -183,7 +191,8 @@ function SearchContent() {
       setSearchFilters(newFilters);
       setIsLoading(true);
       setSelectedInterests(newFilters.selectedInterests || []);
-      const newUsers = performAutosearch(newFilters, ALL_DEMO_USERS, currentUser);
+      const source = apiUsers.length > 0 ? apiUsers : ALL_DEMO_USERS;
+      const newUsers = performAutosearch(newFilters, source, currentUser);
       setUserList(newUsers);
       setCurrentIndex(0);
       setIsLoading(false);

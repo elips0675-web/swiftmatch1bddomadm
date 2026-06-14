@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "@/shims/next-navigation";
 import { useLanguage } from "@/context/language-context";
-import { ALL_DEMO_USERS, GROUP_CATEGORIES } from "@/lib/demo-data";
+import { getToken } from "@/lib/token";
+import { GROUP_CATEGORIES } from "@/lib/demo-data";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -32,33 +33,32 @@ export default function Home() {
   const [showAutosearchDialog, setShowAutosearchDialog] = useState(false);
   const [isMounted, setIsMounted] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [topUsers, setTopUsers] = useState<any[]>([]);
   const [popularGroups, setPopularGroups] = useState<any[]>([]);
   const [view, setView] = useState<'top-users' | 'popular-groups'>('top-users');
 
   useEffect(() => {
-    const saved = localStorage.getItem('userProfile');
-    if (saved) {
-      try {
-        setCurrentUser(JSON.parse(saved));
-      } catch (e) {
-        setCurrentUser(ALL_DEMO_USERS[1]);
+    const token = getToken();
+    const fetchCurrentUser = token
+      ? fetch('/api/profile/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null).catch(() => null)
+      : Promise.resolve(null);
+    const fetchTopUsers = fetch('/api/users/top').then(r => r.ok ? r.json() : []).catch(() => []);
+
+    Promise.all([fetchCurrentUser, fetchTopUsers]).then(([user, top]) => {
+      if (user) {
+        setCurrentUser(user);
+      } else {
+        const saved = localStorage.getItem('userProfile');
+        if (saved) try { setCurrentUser(JSON.parse(saved)); } catch {}
       }
-    } else {
-      setCurrentUser(ALL_DEMO_USERS[1]);
-    }
+      setTopUsers(top);
+    });
 
     setPopularGroups(GROUP_CATEGORIES.slice(0, 4).map(cat => ({
       ...cat,
       onlineCount: Math.floor(Math.random() * 50) + 10
     })));
   }, []);
-
-  const topUsers = useMemo(() => {
-    return [...ALL_DEMO_USERS]
-      .filter(u => u.id !== (currentUser?.id || 1) && !u.isSystem)
-      .sort((a, b) => b.match - a.match)
-      .slice(0, 4);
-  }, [currentUser]);
 
   const runAutosearch = useCallback(() => {
     if (!currentUser) return;

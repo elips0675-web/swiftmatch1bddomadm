@@ -11,6 +11,7 @@ export default function AdminAnalyticsPage() {
   const [retentionData, setRetentionData] = useState([]);
   const [revenueSources, setRevenueSources] = useState([]);
   const [registrationData, setRegistrationData] = useState([]);
+  const [health, setHealth] = useState({ uptime: '—', uptimePercent: '—', lcp: '—', errors: '—', apiLatency: '—' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -18,17 +19,19 @@ export default function AdminAnalyticsPage() {
       const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 
       try {
-        const [overviewRes, retentionRes, revenueRes, registrationsRes] = await Promise.all([
+        const [overviewRes, retentionRes, revenueRes, registrationsRes, healthRes] = await Promise.all([
           fetch('/api/admin/analytics/overview', { headers }),
           fetch('/api/admin/analytics/retention', { headers }),
           fetch('/api/admin/analytics/revenue-mix', { headers }),
           fetch('/api/admin/analytics/registrations', { headers }),
+          fetch('/api/admin/health', { headers }),
         ]);
 
         if (overviewRes.ok) setOverview(await overviewRes.json());
         if (retentionRes.ok) setRetentionData(await retentionRes.json());
         if (revenueRes.ok) setRevenueSources(await revenueRes.json());
         if (registrationsRes.ok) setRegistrationData(await registrationsRes.json());
+        if (healthRes.ok) setHealth(await healthRes.json());
       } catch (err) {
         console.error('Failed to fetch analytics data', err);
       } finally {
@@ -131,7 +134,7 @@ export default function AdminAnalyticsPage() {
           <CardHeader><div className="flex items-center gap-2"><ShieldCheck className="text-primary" size={24}/><CardTitle className="text-lg font-black uppercase">Technical Health</CardTitle></div></CardHeader>
           <CardContent className="space-y-6 relative z-10">
             <div className="grid grid-cols-2 gap-4">
-              {[{l:'Uptime',v:'99.98%',c:'text-emerald-500'},{l:'LCP',v:'1.1s',c:'text-blue-500'},{l:'Errors',v:'0.02%',c:'text-muted-foreground'},{l:'API Latency',v:'180ms',c:'text-amber-500'}].map(s=>(
+              {[{l:'Uptime',v:`${health.uptimePercent}% (${health.uptime})`,c:'text-emerald-500'},{l:'LCP',v:health.lcp,c:'text-blue-500'},{l:'Errors',v:health.errors,c:'text-muted-foreground'},{l:'API Latency',v:health.apiLatency,c:'text-amber-500'}].map(s=>(
                 <div key={s.l} className="bg-background p-4 rounded-2xl shadow-sm border"><p className="text-[10px] font-black text-muted-foreground uppercase mb-1">{s.l}</p><p className={`text-xl font-black ${s.c}`}>{s.v}</p></div>
               ))}
             </div>

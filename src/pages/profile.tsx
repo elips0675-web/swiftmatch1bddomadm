@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "@/shims/next-navigation";
 import { Settings, CircleCheck as CheckCircle2, Camera, Coffee, Music, Globe, Dumbbell, Edit2, Palette, Film, Flower2, Briefcase, Gamepad2, Dog, Ruler, Target, User, Info, Trophy, Heart, VenetianMask, Search, Maximize2, Trash2, X, Star, Check, CircleHelp as HelpCircle, Rocket, CreditCard, Video, BrainCircuit, Users, ChevronRight } from "lucide-react";
 import Image from "@/shims/next-image";
@@ -7,6 +7,7 @@ import Link from "@/shims/next-link";
 import { BottomNav } from "@/components/navigation/bottom-nav";
 import { AppHeader } from "@/components/layout/app-header";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { getToken } from "@/lib/token";
 import { GROUP_CATEGORIES } from "@/lib/demo-data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +41,7 @@ import {
 } from "@/components/ui/carousel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ATTACHMENT_STYLE_INFO } from "@/lib/attachment-styles";
+import { LoginPrompt } from "@/components/shared/login-prompt";
 
 const interestIconsMap: Record<string, any> = {
   "Фотография": Camera, "Путешествия": Globe, "Кофе": Coffee, "Музыка": Music, "Спорт": Dumbbell, "Искусство": Palette, "Кино": Film, "Йога": Flower2, "Бизнес": Briefcase, "Игры": Gamepad2, "Кошки": Dog,
@@ -52,6 +54,7 @@ const BANNED_WORDS = ["Хуй"];
 export default function ProfilePage() {
   const router = useRouter();
   const { t, language } = useLanguage();
+  const [isAuthed] = useState(() => !!getToken());
   const [profile, setProfile] = useState<any>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [isMounted, setIsMounted] = useState(false);
@@ -75,6 +78,48 @@ export default function ProfilePage() {
 
   // Boost Dialog
   const [isBoostDialogOpen, setIsBoostDialogOpen] = useState(false);
+  const [apiGroups, setApiGroups] = useState<any[]>([]);
+  const [joinedGroupNames, setJoinedGroupNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    fetch('/api/groups', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setApiGroups(data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (profile?.joinedGroups) setJoinedGroupNames(profile.joinedGroups);
+  }, [profile]);
+
+  const groupSource = apiGroups.length > 0 ? apiGroups : undefined;
+
+  const matchingGroups = useMemo(() => {
+    if (groupSource) {
+      return groupSource
+        .filter((g: any) => joinedGroupNames.includes(g.name_ru) || joinedGroupNames.includes(g.name_en))
+        .map((g: any) => ({
+          id: g.id,
+          name_ru: g.name_ru,
+          name_en: g.name_en,
+          members: g.members || Math.floor(Math.random() * 100) + 20,
+          online: g.onlineCount || Math.floor(Math.random() * 20) + 5,
+        }));
+    }
+    return GROUP_CATEGORIES.flatMap(cat =>
+      cat.subgroups
+        .filter(sub => joinedGroupNames.includes(sub.name_ru) || joinedGroupNames.includes(sub.name_en))
+        .map(sub => ({
+          id: sub.id,
+          name_ru: sub.name_ru,
+          name_en: sub.name_en,
+          members: sub.members,
+          online: sub.online,
+        }))
+    );
+  }, [groupSource, joinedGroupNames, language]);
 
 function normalizeInterests(interests: any): string[] {
   if (!Array.isArray(interests)) return []
@@ -402,6 +447,8 @@ function normalizeInterests(interests: any): string[] {
     }
   };
 
+  if (!isAuthed) return <LoginPrompt />;
+
   if (!isMounted || !profile) return (
     <div className="flex flex-col h-screen bg-[#f8f9fb]">
       <AppHeader />
@@ -411,7 +458,6 @@ function normalizeInterests(interests: any): string[] {
   );
 
   const earnedTitles = getUserTitles(profile, language);
-  const joinedGroupNames: string[] = profile?.joinedGroups || [];
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f8f9fb]">
@@ -742,31 +788,27 @@ function normalizeInterests(interests: any): string[] {
                   <p className="text-xs text-muted-foreground text-center py-8 font-medium">{t('chats.no_groups')}</p>
                 ) : (
                   <div className="space-y-2">
-                    {GROUP_CATEGORIES.flatMap(cat =>
-                      cat.subgroups
-                        .filter(sub => joinedGroupNames.includes(sub.name_ru) || joinedGroupNames.includes(sub.name_en))
-                        .map(sub => (
-                          <Link href={`/chats?groupId=${sub.id}`} key={sub.id} className="flex items-center justify-between p-3.5 bg-muted/30 rounded-xl hover:bg-muted/60 transition-all cursor-pointer group border border-border/20">
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-bold text-sm text-foreground truncate">
-                                {language === 'RU' ? sub.name_ru : sub.name_en}
-                              </h4>
-                              <div className="flex items-center text-muted-foreground text-[10px] mt-1 gap-3">
-                                <span className="flex items-center gap-1 font-bold uppercase tracking-wider">
-                                  <Users size={11} className="text-muted-foreground/60" /> {sub.members}
-                                </span>
-                                <span className="flex items-center gap-1 font-bold uppercase tracking-wider text-green-600">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-current" />
-                                  {sub.online} {t('chats.online')}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="ml-3 shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-all">
-                              <ChevronRight size={14} className="text-primary" />
-                            </div>
-                          </Link>
-                        ))
-                    )}
+                    {matchingGroups.map(sub => (
+                      <Link href={`/chats?groupId=${sub.id}`} key={sub.id} className="flex items-center justify-between p-3.5 bg-muted/30 rounded-xl hover:bg-muted/60 transition-all cursor-pointer group border border-border/20">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-sm text-foreground truncate">
+                            {language === 'RU' ? sub.name_ru : sub.name_en}
+                          </h4>
+                          <div className="flex items-center text-muted-foreground text-[10px] mt-1 gap-3">
+                            <span className="flex items-center gap-1 font-bold uppercase tracking-wider">
+                              <Users size={11} className="text-muted-foreground/60" /> {sub.members}
+                            </span>
+                            <span className="flex items-center gap-1 font-bold uppercase tracking-wider text-green-600">
+                              <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                              {sub.online} {t('chats.online')}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="ml-3 shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-all">
+                          <ChevronRight size={14} className="text-primary" />
+                        </div>
+                      </Link>
+                    ))}
                   </div>
                 )}
               </div>

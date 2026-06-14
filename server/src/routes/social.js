@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import jwt from 'jsonwebtoken'
 import pool from '../db.js'
+import { getIO } from '../ws.js'
 
 const router = Router()
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
@@ -80,10 +81,15 @@ router.post('/api/likes', auth, async (req, res) => {
       matched = true
     }
 
-    await pool.query(
+    const [notifResult] = await pool.query(
       'INSERT INTO notifications (user_id, type, payload) VALUES (?, ?, ?)',
       [liked_user_id, 'like', JSON.stringify({ from_user_id: req.userId, type: likeType })],
     )
+    const io = getIO()
+    if (io) {
+      const [[notif]] = await pool.query('SELECT id, type, payload, created_at FROM notifications WHERE id = ?', [notifResult.insertId])
+      io.to(`user:${liked_user_id}`).emit('notification:new', notif)
+    }
 
     res.status(201).json({ message: matched ? 'It\'s a match!' : 'Like sent', matched })
   } catch (err) {
@@ -121,10 +127,15 @@ router.post('/api/invites', auth, async (req, res) => {
       [req.userId, invitee_id, type, 'pending'],
     )
 
-    await pool.query(
+    const [notifResult] = await pool.query(
       'INSERT INTO notifications (user_id, type, payload) VALUES (?, ?, ?)',
       [invitee_id, 'invite', JSON.stringify({ from_user_id: req.userId, type })],
     )
+    const io = getIO()
+    if (io) {
+      const [[notif]] = await pool.query('SELECT id, type, payload, created_at FROM notifications WHERE id = ?', [notifResult.insertId])
+      io.to(`user:${invitee_id}`).emit('notification:new', notif)
+    }
 
     res.status(201).json({ message: 'Invite sent' })
   } catch (err) {

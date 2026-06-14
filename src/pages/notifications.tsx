@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getToken } from "@/lib/token";
+import { getSocket } from "@/lib/socket";
 import { useRouter } from "@/shims/next-navigation";
 import {
   Bell, Heart, MessageCircle, UserPlus, Star, Sparkles,
@@ -60,6 +61,25 @@ export default function NotificationsPage() {
   };
 
   useEffect(() => { fetchNotifications() }, []);
+
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+    const onNotif = (notif: any) => {
+      setNotifications(prev => [notif, ...prev]);
+    };
+    const onUnread = (list: any[]) => {
+      setNotifications(prev => {
+        const existingIds = new Set(prev.map(n => n.id));
+        const newOnes = list.filter(n => !existingIds.has(n.id));
+        if (newOnes.length === 0) return prev;
+        return [...newOnes, ...prev];
+      });
+    };
+    socket.on('notification:new', onNotif);
+    socket.on('notification:unread', onUnread);
+    return () => { socket.off('notification:new', onNotif); socket.off('notification:unread', onUnread); };
+  }, []);
 
   const markAllRead = async () => {
     if (!token) return

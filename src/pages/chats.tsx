@@ -25,6 +25,9 @@ import { ALL_DEMO_USERS, GROUP_CATEGORIES } from "@/lib/demo-data";
 import { containsForbiddenWords, isGibberish } from "@/lib/word-filter";
 import { encryptStorage, decryptStorage } from "@/lib/crypto";
 import { useAntiScreenshot } from "@/hooks/useAntiScreenshot";
+import { getSocket } from "@/lib/socket";
+import { getToken } from "@/lib/token";
+import { LoginPrompt } from "@/components/shared/login-prompt";
 const CategoryFeed = React.lazy(() => import("@/components/feeds/category-feed").then(m => ({ default: m.CategoryFeed })));
 
 const VideoCallDialog = dynamic(() => import('@/components/video-call').then(mod => mod.VideoCallDialog), { ssr: false });
@@ -185,6 +188,7 @@ function ChatsContent() {
   const { videoCallsEnabled } = useFeatureFlags();
   const matchId = searchParams.get('matchId');
   const groupId = searchParams.get('groupId');
+  const [isAuthed] = useState(() => !!getToken());
 
   const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
 
@@ -222,6 +226,10 @@ function ChatsContent() {
   const [joinedGroupNames, setJoinedGroupNames] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [recentIds, setRecentIds] = useState<number[]>(() => getRecentChatIds());
+  const [socketConnected, setSocketConnected] = useState(false);
+  const [apiChats, setApiChats] = useState<any[]>([]);
+  const [apiChatsLoading, setApiChatsLoading] = useState(true);
+  const [apiGroups, setApiGroups] = useState<any[]>([]);
   const msgContainerRef = useAntiScreenshot<HTMLDivElement>();
 
   useEffect(() => {
@@ -235,6 +243,20 @@ function ChatsContent() {
   }, []);
 
   const allDirectChats = useMemo(() => {
+    if (apiChats.length > 0) {
+      return apiChats.filter(c => !c.is_group).map(c => {
+        const p = c.participants?.[0];
+        return {
+          id: c.id,
+          name: c.name || p?.display_name || '',
+          img: c.avatar_url || p?.avatar_url || '',
+          online: p?.online || false,
+          lastMessage: c.last_message || '',
+          time: c.updated_at ? new Date(c.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+          isGroup: false,
+        };
+      });
+    }
     const cache = getLastMsgCache();
     const recent = recentIds.map(id => {
       const user = ALL_DEMO_USERS.find(u => u.id === id);
@@ -248,9 +270,20 @@ function ChatsContent() {
     }));
 
     return [...recent, ...remaining];
-  }, [language, recentIds]);
+  }, [language, recentIds, apiChats]);
 
   const allGroupChats = useMemo(() => {
+    if (apiChats.length > 0) {
+      return apiChats.filter(c => c.is_group).map(c => ({
+        id: c.id,
+        name: c.name || '',
+        img: c.avatar_url || '',
+        lastMessage: c.last_message || '',
+        time: c.updated_at ? new Date(c.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+        isGroup: true,
+        members: c.participants?.length || 0,
+      }));
+    }
     const groups: any[] = [];
     GROUP_CATEGORIES.forEach(cat => {
       cat.subgroups.forEach(sub => {
@@ -297,7 +330,85 @@ function ChatsContent() {
   useEffect(() => { if (selectedChat) scrollToBottom(); }, [messages, selectedChat]);
   useEffect(() => { if (selectedChat) scrollToBottom("auto"); }, [viewportHeight]);
 
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+    const onConnect = () => setSocketConnected(true);
+    const onDisconnect = () => setSocketConnected(false);
+    const onChatNew = ({ chatId, last_message }: { chatId: number; last_message: string }) => {
+      saveRecentChatId(chatId);
+      setRecentIds(getRecentChatIds());
+      updateLastMsgCache(chatId, last_message, new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    };
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('chat:new', onChatNew);
+    setSocketConnected(socket.connected);
+    return () => { socket.off('connect', onConnect); socket.off('disconnect', onDisconnect); socket.off('chat:new', onChatNew); };
+  }, []);
 
+  useEffect(() => {
+    if (!socketConnected || !selectedChat?.id) return;
+    const socket = getSocket();
+    if (!socket) return;
+    socket.emit('chat:join', selectedChat.id);
+    const onMessage = (msg: any) => {
+      setMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev;
+        const newMsg = { id: msg.id, text: msg.text, sender: "other", time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+        return [...prev, newMsg];
+      });
+    };
+    const onTyping = ({ isTyping }: { isTyping: boolean }) => {
+      setIsTyping(isTyping);
+    };
+    socket.on('chat:message', onMessage);
+    socket.on('chat:typing', onTyping);
+    return () => { socket.off('chat:message', onMessage); socket.off('chat:typing', onTyping); };
+  }, [socketConnected, selectedChat?.id]);
+
+  useEffect(() => {
+    if (!selectedChat?.id || apiChats.length === 0) return;
+    const token = getToken();
+    if (!token) return;
+    const isApiChat = apiChats.some(c => c.id === selectedChat.id);
+    if (!isApiChat) return;
+    fetch(`/api/chats/${selectedChat.id}/messages`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : [])
+      .then(msgs => {
+        if (msgs.length > 0) {
+          let myId: number | null = null
+          try { myId = JSON.parse(atob(token.split('.')[1])).userId } catch {}
+          const formatted = msgs.map((m: any) => ({
+            id: m.id,
+            text: m.text,
+            sender: m.sender_id === myId ? "me" : "other",
+            time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          }));
+          setMessages(formatted);
+        }
+      })
+      .catch(() => {});
+  }, [selectedChat?.id, apiChats]);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) { setApiChatsLoading(false); return; }
+    fetch('/api/chats', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setApiChats(data))
+      .catch(() => {})
+      .finally(() => setApiChatsLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    fetch('/api/groups', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setApiGroups(data))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (matchId) {
@@ -331,6 +442,13 @@ function ChatsContent() {
         });
       });
       
+      if (!foundGroup && apiGroups.length > 0) {
+        const apiGroup = apiGroups.find((g: any) => g.id === id);
+        if (apiGroup) {
+          foundGroup = { ...apiGroup, isGroup: true };
+        }
+      }
+      
       if (foundGroup) {
         foundGroup.categoryNameRu = foundCategory?.name_ru || '';
         foundGroup.categoryNameEn = foundCategory?.name_en || '';
@@ -349,7 +467,7 @@ function ChatsContent() {
         });
       }
     }
-  }, [matchId, groupId, language, t]);
+  }, [matchId, groupId, language, t, apiGroups]);
 
   const handleToggleJoin = useCallback(() => {
     setJoinedGroupNames(prev => {
@@ -386,6 +504,17 @@ function ChatsContent() {
 
     if (isGibberish(textToSend)) {
       toast({ variant: 'destructive', title: t('filter.toast.title'), description: t('filter.toast.gibberish_description') });
+      return;
+    }
+
+    const socket = getSocket();
+    if (socket?.connected && selectedChat.id) {
+      const msgId = Date.now();
+      const localMsg = { id: msgId, text: textToSend, sender: "me", time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+      setMessages(prev => [...prev, localMsg]);
+      socket.emit('chat:message', { chatId: selectedChat.id, text: textToSend });
+      saveMessages(selectedChat.id, [...messages, localMsg]);
+      if (!textOverride) setInputValue("");
       return;
     }
 
@@ -431,6 +560,8 @@ function ChatsContent() {
       setSelectedChat(null);
     }
   };
+
+  if (!isAuthed) return <LoginPrompt />;
 
   if (selectedChat) {
     // Группы: вместо чата показываем ленту подгруппы
@@ -537,7 +668,7 @@ function ChatsContent() {
         <div className="shrink-0 px-4 py-3 bg-white border-t border-border">
           <div className="flex items-center gap-3">
             <div className="flex-1 relative">
-              <Input value={inputValue} onChange={(e) => setInputValue(e.target.value)} onFocus={() => setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "auto" }), 300)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} placeholder={t('chats.placeholder')} className="pr-12 h-11 bg-muted/50 border-0 rounded-2xl font-medium px-5 text-sm" />
+              <Input value={inputValue} onChange={(e) => { setInputValue(e.target.value); if (socketConnected) getSocket()?.emit('chat:typing', { chatId: selectedChat?.id, isTyping: e.target.value.length > 0 }); }} onFocus={() => setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "auto" }), 300)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} placeholder={t('chats.placeholder')} className="pr-12 h-11 bg-muted/50 border-0 rounded-2xl font-medium px-5 text-sm" />
               <Popover>
                 <PopoverTrigger asChild><button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"><Smile size={20} /></button></PopoverTrigger>
                 <PopoverContent className="w-full max-w-[280px] p-2 rounded-2xl border-0 shadow-2xl bg-white" side="top" align="end">

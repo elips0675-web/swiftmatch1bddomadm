@@ -3,6 +3,7 @@ import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/navigation/bottom-nav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from "@/context/language-context";
+import { getToken } from "@/lib/token";
 import { GROUP_CATEGORIES } from "@/lib/demo-data";
 import Link from "@/shims/next-link";
 import { Users, Search, Star, Music, Dumbbell, Palette, Gamepad2, Film, Globe, ChefHat, Cpu, BookOpen, Sparkles, Shirt, HeartPulse, Dog, FlaskConical, Briefcase, Chrome as HomeIcon, Car, Laugh, Scroll, CirclePlus as PlusCircle, ChevronUp } from "lucide-react";
@@ -136,14 +137,27 @@ export default function GroupsPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   const [activeTab, setActiveTab] = useState<"find" | "top-week" | "my-groups">("find");
-  const ITEMS_PER_PAGE = 12; // 2 колонки => 6 рядов
+  const ITEMS_PER_PAGE = 12;
   const [currentPage, setCurrentPage] = useState(1);
+  const [apiGroups, setApiGroups] = useState<any[]>([]);
+  const [apiGroupsLoading, setApiGroupsLoading] = useState(true);
 
-  // Demo data for different tabs
+  useEffect(() => {
+    const token = getToken();
+    if (!token) { setApiGroupsLoading(false); return; }
+    fetch('/api/groups', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setApiGroups(data))
+      .catch(() => {})
+      .finally(() => setApiGroupsLoading(false));
+  }, []);
+
+  const sourceGroups = apiGroups.length > 0 ? apiGroups : GROUP_CATEGORIES;
+
   const myGroupIds = [1, 3, 5];
-  const myGroups = GROUP_CATEGORIES.filter(g => myGroupIds.includes(g.id));
-  const topGroups = GROUP_CATEGORIES.slice(2, 6);
-  const popularGroups = GROUP_CATEGORIES;
+  const myGroups = sourceGroups.filter((g: any) => myGroupIds.includes(g.id));
+  const topGroups = sourceGroups.slice(2, 6);
+  const popularGroups = sourceGroups;
 
   useEffect(() => {
     setIsMounted(true);
