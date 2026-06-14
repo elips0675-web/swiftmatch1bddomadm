@@ -55,6 +55,6 @@ Run `запуск-всего.bat` to start everything:
 ## Common mistakes to avoid
 
 1. **Admin save 401** — admin routes require JWT. Keep `adminAuth` middleware PASSIVE (call `next()` on failure, don't block). `/api/admin/me` has its own auth check — leave it alone.
-2. **Education badge styling** — Don't change `py`, `px`, `rounded-*`, `border-*`, or any visual classes in `admin-content.tsx` unless asked. The user wants them identical to interests.
+2. **Education badge styling** — Use `EditableList` (same as interests), NEVER a separate `EducationList`. The user wants them identical to interests. Don't change `py`, `px`, `rounded-*`, `border-*` classes.
 3. **Stale token redirect loop** — When Supabase is absent, AdminGuard must ALWAYS try dev-login. The `!getToken()` guard causes redirect to `/login` if a stale token exists.
 4. **Translation keys** — DB stores slugs (`secondary`, `sport`) without prefix. Frontend adds `education.`/`interest.` prefix via `t()`. Never store Russian/English text in DB.
