@@ -27,6 +27,7 @@ function itemLabel(item: string, section: string, t: any): string {
   const prefix =
     section === 'interests' ? 'interest.'
     : section === 'goals' ? 'goal.'
+    : section === 'education' ? 'education.'
     : null
   if (!prefix) return item
   const raw = item.startsWith(prefix) ? item.slice(prefix.length) : item
@@ -104,10 +105,10 @@ function EducationList({ items, onAdd, onDelete, saving }: { items: string[], on
       </div>
       <div className="flex flex-wrap gap-2 p-4 rounded-2xl border bg-muted/30 min-h-[120px] content-start">
         {items.map((item) => (
-          <Badge key={item} variant="secondary" className="text-sm py-0.5 px-3 flex items-center gap-2 border bg-background shadow-sm">
-            {t(item)}
+          <Badge key={item} variant="secondary" className="text-xs py-0.5 px-2 flex items-center gap-1.5 border bg-background shadow-sm rounded-md">
+            {itemLabel(item, 'education', t)}
             <button onClick={() => onDelete(item)} className="text-muted-foreground hover:text-destructive transition-colors">
-              <Trash2 size={12} />
+              <Trash2 size={10} />
             </button>
           </Badge>
         ))}
