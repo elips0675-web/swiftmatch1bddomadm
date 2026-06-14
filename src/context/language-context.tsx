@@ -39,6 +39,8 @@ const translations = {
     'nav.chats': 'Чаты',
     'nav.profile': 'Профиль',
     'nav.groups': 'Группы',
+    'nav.notifications': 'Уведомления',
+    'notification.mark_all_read': 'Прочитать все',
     // Common Buttons
     'button.continue': 'Продолжить',
     'button.skip': 'Пропустить',
@@ -1090,6 +1092,8 @@ const translations = {
     'nav.chats': 'Chats',
     'nav.profile': 'Profile',
     'nav.groups': 'Groups',
+    'nav.notifications': 'Notifications',
+    'notification.mark_all_read': 'Mark all read',
     // Common Buttons
     'button.continue': 'Continue',
     'button.skip': 'Skip',

@@ -20,6 +20,7 @@ const Home = lazy(() => import("./pages/Home"))
 const NotFound = lazy(() => import("./pages/NotFound"))
 const About = lazy(() => import("./pages/about"))
 const Activity = lazy(() => import("./pages/activity"))
+const Notifications = lazy(() => import("./pages/notifications"))
 const Admin = lazy(() => import("./pages/admin"))
 const AdminAnalytics = lazy(() => import("./pages/admin-analytics"))
 const AdminContent = lazy(() => import("./pages/admin-content"))
@@ -129,6 +130,7 @@ const App = () => (
                             <Route path="/" element={<Home />} />
                             <Route path="/about" element={<About />} />
                             <Route path="/activity" element={<Activity />} />
+                            <Route path="/notifications" element={<Notifications />} />
                             <Route path="/chats" element={<Chats />} />
                             <Route path="/chats/:chatId" element={<ChatId />} />
                             <Route path="/contest" element={<Contest />} />

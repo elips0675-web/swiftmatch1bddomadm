@@ -1,19 +1,43 @@
-
+import { useState, useEffect } from "react";
 import Link from "@/shims/next-link";
 import { usePathname } from "@/shims/next-navigation";
-import { Chrome as Home, Search, MessageCircle, User, Users } from "lucide-react";
+import { Chrome as Home, Search, Bell, MessageCircle, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getToken } from "@/lib/token";
 import { useLanguage } from "@/context/language-context";
 
 export function BottomNav() {
   const pathname = usePathname();
   const { t } = useLanguage();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    const controller = new AbortController();
+    fetch('/api/notifications', {
+      signal: controller.signal,
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(data => setUnreadCount(data.filter((n: any) => !n.is_read).length))
+      .catch(() => {});
+    const interval = setInterval(() => {
+      fetch('/api/notifications', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(r => r.json())
+        .then(data => setUnreadCount(data.filter((n: any) => !n.is_read).length))
+        .catch(() => {});
+    }, 30000);
+    return () => { controller.abort(); clearInterval(interval) };
+  }, []);
 
   const navItems = [
     { href: "/", label: t('nav.home'), icon: Home },
     { href: "/search", label: t('nav.search'), icon: Search },
-    { href: "/groups", label: t('nav.groups'), icon: Users },
-    { href: "/chats", label: t('nav.chats'), icon: MessageCircle, badge: 2 },
+    { href: "/notifications", label: t('nav.notifications') || 'Уведомления', icon: Bell, badge: unreadCount },
+    { href: "/chats", label: t('nav.chats'), icon: MessageCircle },
     { href: "/profile", label: t('nav.profile'), icon: User },
   ];
 
@@ -23,7 +47,7 @@ export function BottomNav() {
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
-          
+
           return (
             <Link
               key={item.href}
@@ -36,11 +60,11 @@ export function BottomNav() {
             >
               <div className="relative">
                 <Icon size={isActive ? 24 : 22} />
-                {item.badge && (
+                {item.badge ? (
                   <span className="absolute -top-1 -right-2 min-w-[16px] h-[16px] bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-white">
-                    {item.badge}
+                    {item.badge > 99 ? '99+' : item.badge}
                   </span>
-                )}
+                ) : null}
               </div>
               <span className="text-[10px] font-semibold">{item.label}</span>
             </Link>
