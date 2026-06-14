@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Flag, MoveHorizontal as MoreHorizontal, Download, ShieldCheck, Ban, TriangleAlert as AlertTriangle, Circle as XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { generateMockUsers, generateMockReports, generateModerationLog, exportToCsv, type MockReport, type ModerationLogEntry } from "@/lib/admin-mock-data";
+import { exportToCsv } from "@/lib/admin-mock-data";
+import { getToken } from "@/lib/token";
 
 const REPORT_STATUS_COLORS: Record<string, string> = {
   new: 'bg-red-100 text-red-800 border-red-200',
@@ -18,14 +19,59 @@ const REPORT_STATUS_COLORS: Record<string, string> = {
 const REPORT_STATUS_LABELS: Record<string, string> = { new: 'Новая', reviewed: 'На рассмотрении', dismissed: 'Отклонена', action_taken: 'Действие принято' };
 
 export default function AdminReportsPage() {
-  const users = useMemo(() => generateMockUsers(), []);
-  const [reports, setReports] = useState(() => generateMockReports(users));
-  const [modLog] = useState<ModerationLogEntry[]>(() => generateModerationLog());
-  const blockedUsers = useMemo(() => users.filter(u => u.status === 'banned'), [users]);
+  const [reports, setReports] = useState<any[]>([]);
+  const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
+  const [modLog] = useState<any[]>([]);
 
-  const updateReport = (id: number, status: MockReport['status']) => {
-    setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-    toast.success(`Жалоба #${id}: ${REPORT_STATUS_LABELS[status]}`);
+  useEffect(() => {
+    fetchReports();
+    fetchBlockedUsers();
+  }, []);
+
+  const fetchReports = async () => {
+    try {
+      const res = await fetch('/api/admin/reports', {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) setReports(await res.json());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchBlockedUsers = async () => {
+    try {
+      const res = await fetch('/api/admin/users?status=banned', {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBlockedUsers(data.users || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const updateReport = async (id: number, status: string) => {
+    try {
+      const res = await fetch(`/api/admin/reports/${id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        toast.error('Ошибка при обновлении статуса');
+        return;
+      }
+      setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+      if (status === 'action_taken') {
+        fetchBlockedUsers();
+      }
+      toast.success(`Жалоба #${id}: ${REPORT_STATUS_LABELS[status]}`);
+    } catch {
+      toast.error('Ошибка при обновлении статуса');
+    }
   };
 
   const newCount = reports.filter(r => r.status === 'new').length;
@@ -69,7 +115,7 @@ export default function AdminReportsPage() {
                       <TableCell className="font-bold text-sm">{r.reportedUserName}</TableCell>
                       <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{r.reporterName}</TableCell>
                       <TableCell className="text-xs">{r.reason}</TableCell>
-                      <TableCell className="hidden md:table-cell text-xs text-muted-foreground">{r.evidence}</TableCell>
+                      <TableCell className="hidden md:table-cell text-xs text-muted-foreground">-</TableCell>
                       <TableCell className="hidden md:table-cell text-xs text-muted-foreground">{r.date}</TableCell>
                       <TableCell><Badge variant="outline" className={`text-[9px] ${REPORT_STATUS_COLORS[r.status]}`}>{REPORT_STATUS_LABELS[r.status]}</Badge></TableCell>
                       <TableCell>

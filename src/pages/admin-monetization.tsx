@@ -1,31 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Save, DollarSign, Crown } from 'lucide-react';
+import { Save, DollarSign, Crown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { generateRevenueData, generateConversionFunnel } from '@/lib/admin-mock-data';
 import { useLanguage } from '@/context/language-context';
-
-const PRICING = [
-  { tier: 'Plus', prices: { '1': 299, '6': 1499, '12': 2399 }, color: '#3b82f6' },
-  { tier: 'Gold', prices: { '1': 599, '6': 2999, '12': 4799 }, color: '#f59e0b' },
-  { tier: 'Platinum', prices: { '1': 999, '6': 4999, '12': 7999 }, color: '#8b5cf6' },
-];
+import { getToken } from '@/lib/token';
 
 export default function MonetizationPage() {
   const { t } = useLanguage();
-  const [pricing, setPricing] = useState(PRICING);
+  const [loading, setLoading] = useState(true);
+  const [pricing, setPricing] = useState<any[]>([]);
+  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [funnelData, setFunnelData] = useState<any[]>([]);
   const [ads, setAds] = useState({ google: true, yandex: false, googleId: 'ca-app-pub-3940256099942544/5224354917', yandexId: 'R-M-DEMO-rewarded' });
-  const revenueData = generateRevenueData();
-  const funnelData = generateConversionFunnel();
+
+  useEffect(() => {
+    const token = getToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    Promise.all([
+      fetch('/api/admin/monetization/pricing', { headers }).then(r => r.json()),
+      fetch('/api/admin/monetization/revenue', { headers }).then(r => r.json()),
+      fetch('/api/admin/monetization/funnel', { headers }).then(r => r.json()),
+    ])
+      .then(([pricingData, revenue, funnel]) => {
+        setPricing(pricingData);
+        setRevenueData(revenue);
+        setFunnelData(funnel);
+      })
+      .catch(() => {
+        toast.error('Failed to load monetization data');
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const updatePrice = (tierIdx: number, period: string, value: string) => {
     setPricing(prev => prev.map((t, i) => i === tierIdx ? { ...t, prices: { ...t.prices, [period]: Number(value) || 0 } } : t));
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -38,7 +62,7 @@ export default function MonetizationPage() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             {pricing.map((tier, ti) => (
-              <div key={tier.tier} className="p-4 rounded-2xl border space-y-3">
+              <div key={tier.key || tier.tier} className="p-4 rounded-2xl border space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tier.color }} />
                   <span className="font-black text-sm uppercase">{tier.tier}</span>
@@ -118,7 +142,7 @@ export default function MonetizationPage() {
         <CardContent>
           <div className="space-y-2">
             {funnelData.map((step, i) => {
-              const pct = Math.round((step.count / funnelData[0].count) * 100);
+              const pct = funnelData.length > 0 ? Math.round((step.count / funnelData[0].count) * 100) : 0;
               return (
                 <div key={step.stage} className="flex items-center gap-3">
                   <span className="text-xs font-bold w-36 text-muted-foreground shrink-0">{step.stage}</span>

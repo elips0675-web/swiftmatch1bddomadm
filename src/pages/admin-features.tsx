@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Save, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/context/language-context';
+import { getToken } from '@/lib/token';
 
 interface FeatureFlag {
   key: string;
@@ -16,21 +17,58 @@ interface FeatureFlag {
   affectedUsers: number;
 }
 
+interface ApiFlags {
+  videoCalls: boolean;
+  aiIcebreakers: boolean;
+  aiCompatibility: boolean;
+  groupsPage: boolean;
+  contest: boolean;
+  showAds: boolean;
+  autosearch: boolean;
+}
+
+function buildFlags(t: (k: string) => string, api?: ApiFlags): FeatureFlag[] {
+  return [
+    { key: 'videoCalls', label: t('admin.features.video_calls'), description: t('admin.features.video_calls_desc'), enabled: api?.videoCalls ?? true, affectedUsers: 12480 },
+    { key: 'aiIcebreakers', label: t('admin.features.ai_icebreakers'), description: t('admin.features.ai_icebreakers_desc'), enabled: api?.aiIcebreakers ?? true, affectedUsers: 12480 },
+    { key: 'aiBioGeneration', label: t('admin.features.ai_bio'), description: t('admin.features.ai_bio_desc'), enabled: false, affectedUsers: 0 },
+    { key: 'aiCompatibility', label: t('admin.features.ai_compatibility'), description: t('admin.features.ai_compatibility_desc'), enabled: api?.aiCompatibility ?? true, affectedUsers: 8200 },
+    { key: 'groupsPage', label: t('admin.features.groups_page'), description: t('admin.features.groups_page_desc'), enabled: api?.groupsPage ?? true, affectedUsers: 12480 },
+    { key: 'contests', label: t('admin.features.contests'), description: t('admin.features.contests_desc'), enabled: api?.contest ?? true, affectedUsers: 6500 },
+    { key: 'premiumTiers', label: t('admin.features.premium_tiers'), description: t('admin.features.premium_tiers_desc'), enabled: true, affectedUsers: 2100 },
+  ];
+}
+
 export default function FeatureFlagsPage() {
   const { t } = useLanguage();
+  const [loading, setLoading] = useState(true);
+  const [flags, setFlags] = useState<FeatureFlag[]>([]);
+  const [saved, setSaved] = useState<FeatureFlag[]>([]);
+  const [rawApiData, setRawApiData] = useState<ApiFlags | null>(null);
 
-  const INITIAL_FLAGS: FeatureFlag[] = useMemo(() => [
-    { key: 'videoCalls', label: t('admin.features.video_calls'), description: t('admin.features.video_calls_desc'), enabled: true, affectedUsers: 12480 },
-    { key: 'aiIcebreakers', label: t('admin.features.ai_icebreakers'), description: t('admin.features.ai_icebreakers_desc'), enabled: true, affectedUsers: 12480 },
-    { key: 'aiBioGeneration', label: t('admin.features.ai_bio'), description: t('admin.features.ai_bio_desc'), enabled: false, affectedUsers: 0 },
-    { key: 'aiCompatibility', label: t('admin.features.ai_compatibility'), description: t('admin.features.ai_compatibility_desc'), enabled: true, affectedUsers: 8200 },
-    { key: 'groupsPage', label: t('admin.features.groups_page'), description: t('admin.features.groups_page_desc'), enabled: true, affectedUsers: 12480 },
-    { key: 'contests', label: t('admin.features.contests'), description: t('admin.features.contests_desc'), enabled: true, affectedUsers: 6500 },
-    { key: 'premiumTiers', label: t('admin.features.premium_tiers'), description: t('admin.features.premium_tiers_desc'), enabled: true, affectedUsers: 2100 },
-  ], [t]);
+  useEffect(() => {
+    const token = getToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const [flags, setFlags] = useState(INITIAL_FLAGS);
-  const [saved, setSaved] = useState(INITIAL_FLAGS);
+    fetch('/api/admin/features', { headers })
+      .then(r => {
+        if (!r.ok) throw new Error('Failed to fetch');
+        return r.json();
+      })
+      .then((data: ApiFlags) => {
+        setRawApiData(data);
+        const merged = buildFlags(t, data);
+        setFlags(merged);
+        setSaved(merged);
+      })
+      .catch(() => {
+        const defaults = buildFlags(t);
+        setFlags(defaults);
+        setSaved(defaults);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const toggle = (key: string) => {
     setFlags(prev => prev.map(f => f.key === key ? { ...f, enabled: !f.enabled } : f));
@@ -38,15 +76,57 @@ export default function FeatureFlagsPage() {
 
   const hasChanges = JSON.stringify(flags) !== JSON.stringify(saved);
 
-  const handleSave = () => {
-    setSaved(flags);
-    toast.success(t('admin.features.saved'));
+  const handleSave = async () => {
+    const token = getToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const byKey = Object.fromEntries(flags.map(f => [f.key, f]));
+
+    const body: ApiFlags = {
+      videoCalls: byKey['videoCalls']?.enabled ?? false,
+      aiIcebreakers: byKey['aiIcebreakers']?.enabled ?? false,
+      aiCompatibility: byKey['aiCompatibility']?.enabled ?? false,
+      groupsPage: byKey['groupsPage']?.enabled ?? false,
+      contest: byKey['contests']?.enabled ?? false,
+      showAds: rawApiData?.showAds ?? false,
+      autosearch: rawApiData?.autosearch ?? false,
+    };
+
+    try {
+      const res = await fetch('/api/admin/features', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('Failed to save');
+      setSaved(flags);
+      toast.success(t('admin.features.saved'));
+    } catch {
+      toast.error('Failed to save features');
+    }
   };
 
   const handleReset = () => {
     setFlags(saved);
     toast.info(t('admin.features.reset'));
   };
+
+  if (loading) {
+    return (
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+            <SlidersHorizontal className="h-5 w-5 text-primary" />
+            Feature Flags
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border-0 shadow-sm">

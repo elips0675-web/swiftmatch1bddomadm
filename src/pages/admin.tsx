@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, UserCheck, Heart, DollarSign, TrendingUp, Crown, UserPlus, Flag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -8,15 +8,12 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell
 } from 'recharts';
-import {
-  generateMockUsers, generateRegistrationTrend, generateCityDistribution,
-  generateRecentActivity, type ActivityItem
-} from '@/lib/admin-mock-data';
 import { useLanguage } from '@/context/language-context';
+import { getToken } from '@/lib/token';
 
 const COLORS = ['#fe3c72','#ff8e53','#3b82f6','#8b5cf6','#10b981','#f59e0b','#ec4899','#6366f1'];
 
-const activityIcons: Record<ActivityItem['type'], React.ReactNode> = {
+const activityIcons: Record<string, React.ReactNode> = {
   registration: <UserPlus size={14} className="text-blue-500" />,
   match: <Heart size={14} className="text-primary" fill="currentColor" />,
   report: <Flag size={14} className="text-amber-500" />,
@@ -25,22 +22,53 @@ const activityIcons: Record<ActivityItem['type'], React.ReactNode> = {
 
 export default function AdminDashboardPage() {
   const [trendPeriod, setTrendPeriod] = useState<'7' | '30' | '90'>('7');
+  const [stats, setStats] = useState<any>(null);
+  const [trendData, setTrendData] = useState<any[]>([]);
+  const [cityData, setCityData] = useState<any[]>([]);
+  const [activity, setActivity] = useState<any[]>([]);
   const { t } = useLanguage();
 
-  const users = useMemo(() => generateMockUsers(), []);
-  const trendData = useMemo(() => generateRegistrationTrend(Number(trendPeriod)), [trendPeriod]);
-  const cityData = useMemo(() => generateCityDistribution(users), [users]);
-  const activity = useMemo(() => generateRecentActivity(), []);
+  useEffect(() => {
+    const token = getToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const activeToday = users.filter(u => u.online).length;
-  const totalMatches = users.reduce((s, u) => s + u.matchesCount, 0);
+    fetch('/api/admin/stats', { headers })
+      .then(r => r.json())
+      .then(setStats)
+      .catch(() => {});
+
+    fetch('/api/admin/city-distribution', { headers })
+      .then(r => r.json())
+      .then(setCityData)
+      .catch(() => {});
+
+    fetch('/api/admin/recent-activity', { headers })
+      .then(r => r.json())
+      .then(setActivity)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const token = getToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    fetch(`/api/admin/registration-trend?period=${trendPeriod}`, { headers })
+      .then(r => r.json())
+      .then(setTrendData)
+      .catch(() => {});
+  }, [trendPeriod]);
+
   const dSuffix = t('units.d_short');
-  const currency = t('admin.dash.revenue_value');
+  const currency = stats?.revenue != null
+    ? new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(stats.revenue)
+    : t('admin.dash.revenue_value');
 
   const kpis = [
-    { title: t('admin.dash.total_users'), value: users.length.toLocaleString(), icon: Users, color: 'text-blue-500', change: '+24.1%' },
-    { title: t('admin.dash.active_today'), value: activeToday, icon: UserCheck, color: 'text-emerald-500', change: `${Math.round(activeToday / users.length * 100)}% ${t('admin.dash.from_all')}` },
-    { title: t('admin.dash.total_matches'), value: totalMatches.toLocaleString(), icon: Heart, color: 'text-primary', change: '+19.2%' },
+    { title: t('admin.dash.total_users'), value: stats?.totalUsers || '0', icon: Users, color: 'text-blue-500', change: '+24.1%' },
+    { title: t('admin.dash.active_today'), value: stats?.activeToday ?? 0, icon: UserCheck, color: 'text-emerald-500', change: stats?.totalUsers ? `${Math.round((stats.activeToday / stats.totalUsers) * 100)}% ${t('admin.dash.from_all')}` : '0%' },
+    { title: t('admin.dash.total_matches'), value: stats?.totalMatches || '0', icon: Heart, color: 'text-primary', change: '+19.2%' },
     { title: t('admin.dash.revenue_month'), value: currency, icon: DollarSign, color: 'text-amber-500', change: '+32%' },
   ];
 

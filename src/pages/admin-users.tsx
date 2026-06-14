@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -8,93 +8,168 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Search, MoveHorizontal as MoreHorizontal, Download, ChevronLeft, ChevronRight, Ban, Trash2, TriangleAlert as AlertTriangle, UserCheck } from "lucide-react";
+import { Search, MoveHorizontal as MoreHorizontal, Download, ChevronLeft, ChevronRight, Ban, Trash2, TriangleAlert as AlertTriangle, UserCheck, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { generateMockUsers, exportToCsv, type MockUser, type UserStatus, type PremiumTier } from "@/lib/admin-mock-data";
+import { exportToCsv } from "@/lib/admin-mock-data";
+import { getToken } from "@/lib/token";
 import { useLanguage } from "@/context/language-context";
 
-const STATUS_COLORS: Record<UserStatus, string> = {
+interface AdminUser {
+  id: number;
+  name: string;
+  age: number;
+  email: string;
+  city: string;
+  status: string;
+  premium: string;
+  bio?: string;
+  joined: string;
+  lastActive: string;
+  matchesCount: number;
+  reportsCount: number;
+  interests?: string[];
+  moderationHistory?: { date: string; action: string; admin: string; reason: string }[];
+}
+
+const STATUS_COLORS: Record<string, string> = {
   active: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   banned: 'bg-red-100 text-red-800 border-red-200',
   suspended: 'bg-amber-100 text-amber-800 border-amber-200',
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
 };
-const PREMIUM_LABELS: Record<PremiumTier, string> = { free: 'Free', plus: 'Plus', gold: 'Gold', platinum: 'Platinum' };
+const PREMIUM_LABELS: Record<string, string> = { free: 'Free', plus: 'Plus', gold: 'Gold', platinum: 'Platinum' };
 
 const PAGE_SIZE = 15;
 
 export default function AdminUsersPage() {
   const { t } = useLanguage();
-  const STATUS_LABELS: Record<UserStatus, string> = {
+  const STATUS_LABELS: Record<string, string> = {
     active: t('admin.users.status.active'),
     banned: t('admin.users.status.banned'),
     suspended: t('admin.users.status.suspended'),
     pending: t('admin.users.status.pending'),
   };
-  const [allUsers, setAllUsers] = useState(() => generateMockUsers());
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [cityFilter, setCityFilter] = useState<string>('all');
   const [premiumFilter, setPremiumFilter] = useState<string>('all');
-  const [sortField, setSortField] = useState<'name' | 'joined' | 'age'>('joined');
+  const [sortField, setSortField] = useState<'name' | 'age' | 'joined'>('joined');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [drawerUser, setDrawerUser] = useState<MockUser | null>(null);
+  const [drawerUser, setDrawerUser] = useState<AdminUser | null>(null);
+  const [cities, setCities] = useState<string[]>([]);
 
-  const cities = useMemo(() => [...new Set(allUsers.map(u => u.city))].sort(), [allUsers]);
-
-  const filtered = useMemo(() => {
-    let list = allUsers;
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.city.toLowerCase().includes(q));
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = getToken();
+      const params = new URLSearchParams({
+        search,
+        status: statusFilter,
+        city: cityFilter,
+        premium: premiumFilter,
+        sort: sortField,
+        dir: sortDir,
+        page: String(page),
+      });
+      const res = await fetch(`/api/admin/users?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setUsers(data.users || []);
+      setTotal(data.total || 0);
+      if (data.cities) setCities(data.cities);
+    } catch {
+      toast.error(t('admin.users.fetch_error'));
+    } finally {
+      setLoading(false);
     }
-    if (statusFilter !== 'all') list = list.filter(u => u.status === statusFilter);
-    if (cityFilter !== 'all') list = list.filter(u => u.city === cityFilter);
-    if (premiumFilter !== 'all') list = list.filter(u => u.premium === premiumFilter);
-    list = [...list].sort((a, b) => {
-      const dir = sortDir === 'asc' ? 1 : -1;
-      if (sortField === 'name') return a.name.localeCompare(b.name) * dir;
-      if (sortField === 'age') return (a.age - b.age) * dir;
-      return a.joined.localeCompare(b.joined) * dir;
-    });
-    return list;
-  }, [allUsers, search, statusFilter, cityFilter, premiumFilter, sortField, sortDir]);
+  }, [search, statusFilter, cityFilter, premiumFilter, sortField, sortDir, page, t]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageUsers = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const toggleSort = (field: typeof sortField) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDir('asc'); }
   };
 
-  const toggleSelect = (id: number) => setSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  const toggleSelect = (id: number) => setSelected(prev => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s; });
   const toggleAll = () => {
-    if (selected.size === pageUsers.length) setSelected(new Set());
-    else setSelected(new Set(pageUsers.map(u => u.id)));
+    if (selected.size === users.length) setSelected(new Set());
+    else setSelected(new Set(users.map(u => u.id)));
   };
 
-  const bulkAction = useCallback((action: 'ban' | 'suspend' | 'delete') => {
+  const bulkAction = useCallback(async (action: 'ban' | 'suspend' | 'delete') => {
     if (!selected.size) return;
     const labels = { ban: t('admin.users.bulk_banned'), suspend: t('admin.users.bulk_suspended'), delete: t('admin.users.bulk_deleted') };
-    if (action === 'delete') {
-      setAllUsers(prev => prev.filter(u => !selected.has(u.id)));
-    } else {
-      const newStatus: UserStatus = action === 'ban' ? 'banned' : 'suspended';
-      setAllUsers(prev => prev.map(u => selected.has(u.id) ? { ...u, status: newStatus } : u));
+    try {
+      const token = getToken();
+      const res = await fetch('/api/admin/users/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ids: Array.from(selected), action }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`${selected.size} — ${labels[action]}`);
+      setSelected(new Set());
+      fetchUsers();
+    } catch {
+      toast.error(t('admin.users.error_toast'));
     }
-    toast.success(`${selected.size} — ${labels[action]}`);
-    setSelected(new Set());
-  }, [selected, t]);
+  }, [selected, t, fetchUsers]);
 
   const handleExport = () => {
-    exportToCsv('users_export.csv', filtered.map(u => ({
+    exportToCsv('users_export.csv', users.map(u => ({
       ID: u.id, Name: u.name, Age: u.age, Email: u.email, City: u.city,
-      Status: STATUS_LABELS[u.status], Plan: u.premium, Joined: u.joined,
+      Status: STATUS_LABELS[u.status] || u.status, Plan: u.premium, Joined: u.joined,
     })));
     toast.success(t('admin.users.csv_downloaded'));
+  };
+
+  const handleBanToggle = async (userId: number, currentlyBanned: boolean) => {
+    try {
+      const token = getToken();
+      if (currentlyBanned) {
+        await fetch(`/api/admin/users/${userId}/unban`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        toast.success(t('admin.users.unbanned_toast'));
+      } else {
+        await fetch(`/api/admin/users/${userId}/ban`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ reason: 'Manual ban' }),
+        });
+        toast.success(t('admin.users.banned_toast'));
+      }
+      fetchUsers();
+    } catch {
+      toast.error(t('admin.users.error_toast'));
+    }
+  };
+
+  const handleDelete = async (userId: number) => {
+    try {
+      const token = getToken();
+      await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success(t('admin.users.deleted_toast'));
+      setDrawerUser(prev => prev?.id === userId ? null : prev);
+      fetchUsers();
+    } catch {
+      toast.error(t('admin.users.error_toast'));
+    }
   };
 
   return (
@@ -134,6 +209,9 @@ export default function AdminUsersPage() {
         <Button variant="outline" size="sm" onClick={handleExport} className="rounded-xl h-10">
           <Download size={14} className="mr-2" /> CSV
         </Button>
+        <Button variant="outline" size="sm" onClick={fetchUsers} className="rounded-xl h-10" disabled={loading}>
+          <RefreshCw size={14} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
 
       {selected.size > 0 && (
@@ -150,7 +228,7 @@ export default function AdminUsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-10"><Checkbox checked={selected.size === pageUsers.length && pageUsers.length > 0} onCheckedChange={toggleAll} /></TableHead>
+                <TableHead className="w-10"><Checkbox checked={selected.size === users.length && users.length > 0} onCheckedChange={toggleAll} /></TableHead>
                 <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('name')}>{t('admin.users.name')} {sortField === 'name' && (sortDir === 'asc' ? '↑' : '↓')}</TableHead>
                 <TableHead className="hidden md:table-cell cursor-pointer select-none" onClick={() => toggleSort('age')}>{t('admin.users.age')} {sortField === 'age' && (sortDir === 'asc' ? '↑' : '↓')}</TableHead>
                 <TableHead className="hidden lg:table-cell">{t('admin.users.email')}</TableHead>
@@ -162,7 +240,15 @@ export default function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pageUsers.map(user => (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">{t('admin.users.loading')}</TableCell>
+                </TableRow>
+              ) : users.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">{t('admin.users.no_results')}</TableCell>
+                </TableRow>
+              ) : users.map(user => (
                 <TableRow key={user.id} className="group">
                   <TableCell><Checkbox checked={selected.has(user.id)} onCheckedChange={() => toggleSelect(user.id)} /></TableCell>
                   <TableCell>
@@ -174,11 +260,11 @@ export default function AdminUsersPage() {
                   <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{user.email}</TableCell>
                   <TableCell className="hidden md:table-cell text-xs">{user.city}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={`text-[9px] ${STATUS_COLORS[user.status]}`}>{STATUS_LABELS[user.status]}</Badge>
+                    <Badge variant="outline" className={`text-[9px] ${STATUS_COLORS[user.status] || ''}`}>{STATUS_LABELS[user.status] || user.status}</Badge>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <Badge variant="outline" className={`text-[9px] ${user.premium !== 'free' ? 'bg-amber-50 text-amber-700 border-amber-200' : ''}`}>
-                      {PREMIUM_LABELS[user.premium]}
+                      {PREMIUM_LABELS[user.premium] || user.premium}
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">{user.joined}</TableCell>
@@ -189,15 +275,13 @@ export default function AdminUsersPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="rounded-xl">
                         <DropdownMenuItem onClick={() => setDrawerUser(user)}>{t('admin.users.view')}</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {
-                          setAllUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: u.status === 'banned' ? 'active' : 'banned' } : u));
-                          toast.success(user.status === 'banned' ? t('admin.users.unbanned_toast') : t('admin.users.banned_toast'));
-                        }}>{user.status === 'banned' ? t('admin.users.unblock') : t('admin.users.block')}</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleBanToggle(user.id, user.status === 'banned')}>
+                          {user.status === 'banned' ? t('admin.users.unblock') : t('admin.users.block')}
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={() => {
-                          setAllUsers(prev => prev.filter(u => u.id !== user.id));
-                          toast.success(`${user.name} — ${t('admin.users.deleted_toast')}`);
-                        }}>{t('admin.users.delete')}</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(user.id)}>
+                          {t('admin.users.delete')}
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -207,10 +291,12 @@ export default function AdminUsersPage() {
           </Table>
         </CardContent>
         <CardFooter className="flex items-center justify-between border-t p-4">
-          <span className="text-xs text-muted-foreground">{t('admin.users.showing')} {(page-1)*PAGE_SIZE+1}–{Math.min(page*PAGE_SIZE, filtered.length)} {t('admin.users.of')} {filtered.length}</span>
+          <span className="text-xs text-muted-foreground">
+            {total > 0 ? `${t('admin.users.showing')} ${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} ${t('admin.users.of')} ${total}` : ''}
+          </span>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft size={14} /></Button>
-            <span className="text-sm font-bold">{page} / {totalPages}</span>
+            <span className="text-sm font-bold">{page} / {totalPages || 1}</span>
             <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}><ChevronRight size={14} /></Button>
           </div>
         </CardFooter>
@@ -223,48 +309,44 @@ export default function AdminUsersPage() {
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
                   {drawerUser.name}, {drawerUser.age}
-                  <Badge variant="outline" className={`text-[9px] ${STATUS_COLORS[drawerUser.status]}`}>{STATUS_LABELS[drawerUser.status]}</Badge>
+                  <Badge variant="outline" className={`text-[9px] ${STATUS_COLORS[drawerUser.status] || ''}`}>{STATUS_LABELS[drawerUser.status] || drawerUser.status}</Badge>
                 </SheetTitle>
                 <SheetDescription>{drawerUser.email}</SheetDescription>
               </SheetHeader>
               <div className="mt-6 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-xl bg-muted/50"><p className="text-[10px] font-bold text-muted-foreground uppercase">{t('admin.users.city')}</p><p className="font-bold text-sm">{drawerUser.city}</p></div>
-                  <div className="p-3 rounded-xl bg-muted/50"><p className="text-[10px] font-bold text-muted-foreground uppercase">{t('admin.users.plan')}</p><p className="font-bold text-sm">{PREMIUM_LABELS[drawerUser.premium]}</p></div>
+                  <div className="p-3 rounded-xl bg-muted/50"><p className="text-[10px] font-bold text-muted-foreground uppercase">{t('admin.users.plan')}</p><p className="font-bold text-sm">{PREMIUM_LABELS[drawerUser.premium] || drawerUser.premium}</p></div>
                   <div className="p-3 rounded-xl bg-muted/50"><p className="text-[10px] font-bold text-muted-foreground uppercase">{t('admin.users.matches_count')}</p><p className="font-bold text-sm">{drawerUser.matchesCount}</p></div>
                   <div className="p-3 rounded-xl bg-muted/50"><p className="text-[10px] font-bold text-muted-foreground uppercase">{t('admin.users.reports_count')}</p><p className="font-bold text-sm">{drawerUser.reportsCount}</p></div>
                 </div>
                 <div className="p-3 rounded-xl bg-muted/50"><p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">{t('admin.users.bio')}</p><p className="text-sm">{drawerUser.bio}</p></div>
-                <div className="p-3 rounded-xl bg-muted/50">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">{t('admin.users.interests')}</p>
-                  <div className="flex flex-wrap gap-1.5">{drawerUser.interests.map(i => <Badge key={i} variant="secondary" className="text-xs">{i}</Badge>)}</div>
-                </div>
+                {drawerUser.interests?.length > 0 && (
+                  <div className="p-3 rounded-xl bg-muted/50">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">{t('admin.users.interests')}</p>
+                    <div className="flex flex-wrap gap-1.5">{drawerUser.interests.map((i: string) => <Badge key={i} variant="secondary" className="text-xs">{i}</Badge>)}</div>
+                  </div>
+                )}
                 <div>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">{t('admin.users.reg_date')}: {drawerUser.joined}</p>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase">{t('admin.users.last_active')}: {drawerUser.lastActive}</p>
                 </div>
-                {drawerUser.moderationHistory.length > 0 && (
+                {drawerUser.moderationHistory?.length > 0 && (
                   <div className="p-3 rounded-xl bg-red-50 border border-red-200">
                     <p className="text-[10px] font-bold text-red-600 uppercase mb-2">{t('admin.users.mod_history')}</p>
-                    {drawerUser.moderationHistory.map((h, i) => (
+                    {drawerUser.moderationHistory.map((h, i: number) => (
                       <div key={i} className="text-xs mb-1"><span className="font-bold">{h.date}</span> — {h.action} ({h.reason}) — {h.admin}</div>
                     ))}
                   </div>
                 )}
                 <div className="flex gap-2 pt-2">
                   <Button size="sm" variant="outline" className="flex-1 rounded-xl" onClick={() => {
-                    const newStatus = drawerUser.status === 'banned' ? 'active' : 'banned';
-                    setAllUsers(prev => prev.map(u => u.id === drawerUser.id ? { ...u, status: newStatus } : u));
-                    setDrawerUser({ ...drawerUser, status: newStatus });
-                    toast.success(newStatus === 'banned' ? t('admin.users.banned_toast') : t('admin.users.unbanned_toast'));
+                    handleBanToggle(drawerUser.id, drawerUser.status === 'banned');
+                    setDrawerUser(null);
                   }}>
                     {drawerUser.status === 'banned' ? <><UserCheck size={14} className="mr-1" /> {t('admin.users.unblock')}</> : <><Ban size={14} className="mr-1" /> {t('admin.users.block')}</>}
                   </Button>
-                  <Button size="sm" variant="destructive" className="rounded-xl" onClick={() => {
-                    setAllUsers(prev => prev.filter(u => u.id !== drawerUser.id));
-                    setDrawerUser(null);
-                    toast.success(t('admin.users.deleted_toast'));
-                  }}><Trash2 size={14} /></Button>
+                  <Button size="sm" variant="destructive" className="rounded-xl" onClick={() => handleDelete(drawerUser.id)}><Trash2 size={14} /></Button>
                 </div>
               </div>
             </>

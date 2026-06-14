@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Send, Mail, Bell, Download, Globe, Loader as Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { generateMockCampaigns, exportToCsv, type MockCampaign } from '@/lib/admin-mock-data';
+import { exportToCsv } from '@/lib/admin-mock-data';
 import { useLanguage } from '@/context/language-context';
+import { getToken } from '@/lib/token';
 
 const STATUS_BADGE: Record<string, string> = {
   sent: 'bg-emerald-100 text-emerald-800',
@@ -19,33 +20,53 @@ const STATUS_BADGE: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-800',
 };
 
+async function fetchCampaigns() {
+  const res = await fetch('/api/admin/campaigns', {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch campaigns');
+  return res.json();
+}
+
 export default function AdminMessagingPage() {
   const { t } = useLanguage();
-  const [campaigns, setCampaigns] = useState<MockCampaign[]>(generateMockCampaigns);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [target, setTarget] = useState('all');
   const [channel, setChannel] = useState('push');
   const [isSending, setIsSending] = useState(false);
 
-  const handleSend = () => {
+  useEffect(() => {
+    fetchCampaigns()
+      .then(setCampaigns)
+      .catch(() => toast.error(t('admin.messaging.load_error')))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSend = async () => {
     if (!title || !body) { toast.error(t('admin.messaging.fill_all')); return; }
     setIsSending(true);
-    setTimeout(() => {
-      const newCampaign: MockCampaign = {
-        id: campaigns.length + 1,
-        title, body, target: target as MockCampaign['target'],
-        channel: channel as MockCampaign['channel'],
-        status: 'sent', sentAt: new Date().toISOString().split('T')[0],
-        delivered: Math.floor(Math.random() * 8000) + 2000,
-        opened: Math.floor(Math.random() * 3000) + 500,
-        clicked: Math.floor(Math.random() * 800) + 100,
-      };
-      setCampaigns(prev => [newCampaign, ...prev]);
+    try {
+      const res = await fetch('/api/admin/campaigns', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({ title, body, target, channel }),
+      });
+      if (!res.ok) throw new Error('Failed to send');
       setTitle(''); setBody('');
-      setIsSending(false);
       toast.success(t('admin.messaging.sent'));
-    }, 1500);
+      const updated = await fetchCampaigns();
+      setCampaigns(updated);
+    } catch {
+      toast.error(t('admin.messaging.send_error'));
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -106,32 +127,46 @@ export default function AdminMessagingPage() {
           }}><Download size={12} className="mr-1" /> CSV</Button>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('admin.messaging.subject')}</TableHead>
-                <TableHead className="hidden sm:table-cell">{t('admin.messaging.channel')}</TableHead>
-                <TableHead className="hidden md:table-cell">{t('admin.messaging.audience')}</TableHead>
-                <TableHead>{t('admin.messaging.status')}</TableHead>
-                <TableHead className="hidden md:table-cell">{t('admin.messaging.delivered')}</TableHead>
-                <TableHead className="hidden lg:table-cell">{t('admin.messaging.opened')}</TableHead>
-                <TableHead className="hidden lg:table-cell">{t('admin.messaging.clicked')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {campaigns.map(c => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium text-sm max-w-[250px] truncate">{c.title}</TableCell>
-                  <TableCell className="hidden sm:table-cell"><Badge variant="outline" className="text-[9px]">{c.channel}</Badge></TableCell>
-                  <TableCell className="hidden md:table-cell text-xs">{c.target}</TableCell>
-                  <TableCell><Badge className={`text-[9px] border-0 ${STATUS_BADGE[c.status]}`}>{c.status}</Badge></TableCell>
-                  <TableCell className="hidden md:table-cell text-xs">{c.delivered.toLocaleString()}</TableCell>
-                  <TableCell className="hidden lg:table-cell text-xs">{c.opened.toLocaleString()}</TableCell>
-                  <TableCell className="hidden lg:table-cell text-xs">{c.clicked.toLocaleString()}</TableCell>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('admin.messaging.subject')}</TableHead>
+                  <TableHead className="hidden sm:table-cell">{t('admin.messaging.channel')}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t('admin.messaging.audience')}</TableHead>
+                  <TableHead>{t('admin.messaging.status')}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t('admin.messaging.delivered')}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{t('admin.messaging.opened')}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{t('admin.messaging.clicked')}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {campaigns.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8 text-sm">
+                      {t('admin.messaging.no_campaigns')}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  campaigns.map(c => (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-medium text-sm max-w-[250px] truncate">{c.title}</TableCell>
+                      <TableCell className="hidden sm:table-cell"><Badge variant="outline" className="text-[9px]">{c.channel}</Badge></TableCell>
+                      <TableCell className="hidden md:table-cell text-xs">{c.target}</TableCell>
+                      <TableCell><Badge className={`text-[9px] border-0 ${STATUS_BADGE[c.status]}`}>{c.status}</Badge></TableCell>
+                      <TableCell className="hidden md:table-cell text-xs">{c.delivered?.toLocaleString()}</TableCell>
+                      <TableCell className="hidden lg:table-cell text-xs">{c.opened?.toLocaleString()}</TableCell>
+                      <TableCell className="hidden lg:table-cell text-xs">{c.clicked?.toLocaleString()}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
