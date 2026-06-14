@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getToken } from "@/lib/token";
 import { useRouter } from "@/shims/next-navigation";
 import { 
   Heart, 
@@ -33,19 +34,16 @@ import { useLanguage } from "@/context/language-context";
 const PremiumDialog = dynamic(() => import('@/components/dialogs/premium-dialog').then(mod => mod.PremiumDialog), { ssr: false });
 const AdDialog = dynamic(() => import('@/components/dialogs/ad-dialog').then(mod => mod.AdDialog), { ssr: false });
 
-const ACTIVITY_DATA = [
-  { id: 1, userId: 1, user: 'Анна', age: 24, img: PlaceHolderImages[0].imageUrl, type: 'like', time: '5 мин назад', seen: false, blurred: true },
-  { id: 2, userId: 3, user: 'Елена', age: 26, img: PlaceHolderImages[2].imageUrl, type: 'visit', time: '15 мин назад', seen: false, blurred: false },
-  { id: 3, userId: 7, user: 'Мария', age: 29, img: PlaceHolderImages[6].imageUrl, type: 'match', time: '1 час назад', seen: true, blurred: false },
-  { id: 4, userId: 5, user: 'София', age: 22, img: PlaceHolderImages[4].imageUrl, type: 'like', time: '3 часа назад', seen: true, blurred: true },
-  { id: 5, userId: 9, user: 'Ксения', age: 23, img: PlaceHolderImages[8].imageUrl, type: 'visit', time: '5 часов назад', seen: true, blurred: false },
-];
-
-const INVITE_DATA = [
-  { id: 101, userId: 1, user: 'Анна', age: 24, img: PlaceHolderImages[0].imageUrl, type: 'coffee', time: '10 мин назад', seen: false },
-  { id: 102, userId: 7, user: 'Мария', age: 29, img: PlaceHolderImages[6].imageUrl, type: 'cinema', time: '2 часа назад', seen: false },
-  { id: 103, userId: 3, user: 'Елена', age: 26, img: PlaceHolderImages[2].imageUrl, type: 'walk', time: '1 день назад', seen: true },
-];
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'только что';
+  if (mins < 60) return `${mins} мин назад`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} ч назад`;
+  const days = Math.floor(hrs / 24);
+  return `${days} дн назад`;
+}
 
 export default function ActivityPage() {
   const router = useRouter();
@@ -55,7 +53,8 @@ export default function ActivityPage() {
   const [showAd, setShowAd] = useState(false);
   const [isIncognito, setIsIncognito] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [invites, setInvites] = useState<any[]>(INVITE_DATA);
+  const [invites, setInvites] = useState<any[]>([]);
+  const [activity, setActivity] = useState<any[]>([]);
 
   useEffect(() => {
     setIsClient(true);
@@ -63,13 +62,26 @@ export default function ActivityPage() {
     if (savedIncognito) {
       setIsIncognito(JSON.parse(savedIncognito));
     }
-    const savedInvites = localStorage.getItem('receivedInvites');
-    if (savedInvites) {
-      try { setInvites(JSON.parse(savedInvites)); } catch {}
-    }
+    const token = getToken();
+    if (!token) return;
+    fetch('/api/activity', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => setActivity(data.map((a: any) => ({
+        id: a.id, userId: a.user_id, user: a.user_name, img: a.user_avatar || '',
+        type: a.action_type === 'profile_view' ? 'visit' : a.action_type,
+        time: timeAgo(a.created_at), seen: false, blurred: false,
+      }))))
+      .catch(() => {});
+    fetch('/api/invites', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => setInvites(data.map((i: any) => ({
+        id: i.id, userId: i.sender_id, user: i.sender_name, img: i.sender_avatar || '',
+        type: i.type, time: timeAgo(i.created_at), seen: i.status !== 'pending',
+      }))))
+      .catch(() => {});
   }, []);
 
-  const filteredActivity = ACTIVITY_DATA.filter(item => {
+  const filteredActivity = activity.filter(item => {
     if (activeTab === "all") return true;
     if (activeTab === "likes") return item.type === "like" || item.type === "match";
     if (activeTab === "visits") return item.type === "visit";

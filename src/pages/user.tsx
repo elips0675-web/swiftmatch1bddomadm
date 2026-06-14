@@ -14,6 +14,7 @@ import { cn, getUserTitles } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { ALL_DEMO_USERS, POLL_QUESTIONS } from "@/lib/demo-data";
+import { getToken } from "@/lib/token";
 import { ZodiacIcon } from "@/components/shared/zodiac-icon";
 import {
   Carousel,
@@ -130,12 +131,31 @@ function UserProfileContent() {
     }
   };
 
-  const handleReportSubmit = () => {
+  const handleReportSubmit = async () => {
     if (!reportReason) {
       toast({ variant: 'destructive', title: t('report.toast.no_reason_title'), description: t('report.toast.no_reason_desc') });
       return;
     }
-    toast({ title: t('report.toast.success_title'), description: `${t('report.toast.success_desc')} ${user.name}.` });
+    try {
+      const token = getToken();
+      if (!token) {
+        toast({ variant: 'destructive', title: t('auth.login_required'), description: t('report.toast.login_first') });
+        return;
+      }
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reported_id: user.id, reason: reportReason, description: reportDescription }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: t('report.toast.success_title'), description: `${t('report.toast.success_desc')} ${user.name}.` });
+      } else {
+        toast({ variant: 'destructive', title: t('common.error'), description: data.message });
+      }
+    } catch {
+      toast({ variant: 'destructive', title: t('auth.network_error'), description: t('auth.network_error_desc') });
+    }
     setIsReportDialogOpen(false);
     setReportReason('');
     setReportDescription('');

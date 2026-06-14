@@ -16,6 +16,11 @@ import adminMessaging from './routes/admin/messaging.js'
 import adminMonetization from './routes/admin/monetization.js'
 import profileRoutes from './routes/profile.js'
 import uploadRoutes from './routes/upload.js'
+import authRoutes from './routes/auth.js'
+import reportRoutes from './routes/reports.js'
+import notificationRoutes from './routes/notifications.js'
+import activityRoutes from './routes/activity.js'
+import socialRoutes from './routes/social.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -112,8 +117,13 @@ app.get('/api/content', async (req, res) => {
   }
 })
 
+app.use(authRoutes)
 app.use(profileRoutes)
 app.use(uploadRoutes)
+app.use(reportRoutes)
+app.use(notificationRoutes)
+app.use(activityRoutes)
+app.use(socialRoutes)
 
 app.use('/api/admin', adminAuth)
 
@@ -143,6 +153,13 @@ app.use('/api/admin', adminContent)
 app.use('/api/admin', adminFeatures)
 app.use('/api/admin', adminMessaging)
 app.use('/api/admin', adminMonetization)
+
+const distPath = path.join(__dirname, '../../dist')
+app.use(express.static(distPath))
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next()
+  res.sendFile(path.join(distPath, 'index.html'))
+})
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err)
