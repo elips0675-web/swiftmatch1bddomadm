@@ -82,7 +82,7 @@ npx vite --port 8081 --host
 | # | Что | Статус |
 |---|---|---|
 | 16 | Email-рассылки — `POST /campaigns` реально шлёт письма через nodemailer/SMTP | ✅ |
-| 17 | Push-уведомления (FCM/VAPID, Service Worker) | ⬜ |
+| 17 | Push-уведомления — VAPID, `pushManager.subscribe`, `web-push` dispatch | ✅ |
 | 18 | Бан пользователя + WS `user:banned` (разлогин забаненного) | ✅ |
 | 19 | Real-time модерация запрещённых слов в чатах (REST + WS) | ✅ |
 | 20 | История действий (`activity_log`) в админке (вкладка в карточке юзера) | ✅ |
@@ -111,7 +111,11 @@ npx vite --port 8081 --host
 
 ## Ченджлог
 
-### Фаза 3 — Admin & Moderation ✅ (`988b546`)
+### Фаза 3 — Admin & Moderation ✅ (`d2b33f2`)
+- Push: `push_subscriptions` table, `POST /api/push/subscribe`, `DELETE /api/push/subscribe`
+- Push: `sendPushToUser()` / `sendPushToAll()` через `web-push`
+- Push: кампании с `channel='push'` теперь реально отправляют push-уведомления
+- Push: settings.tsx подписывается/отписывается через `pushManager.subscribe`
 - Banned words: новый хелпер `server/src/banned-words.js` (кэширование 60s)
 - Banned words: проверка в `POST /api/chats/:chatId/messages` + в WebSocket `chat:message`
 - Banned words: при нарушении WS шлёт `chat:error`, REST → 403

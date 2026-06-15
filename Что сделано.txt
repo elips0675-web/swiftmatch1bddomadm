@@ -8,7 +8,7 @@
 
 🟡 Фаза 3 — Admin & Moderation ✅
  16. Email-рассылки (nodemailer/SMTP)                          ✅
- 17. Push-уведомления (FCM/VAPID)                              ⬜
+ 17. Push-уведомления (VAPID + web-push + subscribe/dispatch)   ✅
  18. Бан + WS user:banned (разлогин)                           ✅
  19. Запрещённые слова в чатах (REST + WS)                     ✅
  20. История действий (activity_log) в карточке юзера           ✅
