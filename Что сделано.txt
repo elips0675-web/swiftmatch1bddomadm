@@ -1,20 +1,47 @@
-Готово. Проект в C:\swiftmatch1bd адаптирован для локальной разработки с MySQL:
+=== СТАТУС ПРОЕКТА ПО ФАЗАМ ===
 
-## Фаза 1 — Core User Flow ✅ (июнь 2026)
-- profile-edit: сохраняет через /api/profile/me с Bearer-токеном
-- server: PUT /api/profile/me защищён auth middleware, использует req.userId
-- user.tsx: handleLike → POST /api/likes + при мэтче POST /api/chats
-- onboarding: сохраняет в MySQL API (fallback localStorage)
-- register: сохраняет токен, редирект на /onboarding
+🔴 Фаза 1 — Core User Flow ✅
+  1. profile-edit: /api/profile/me + Bearer-токен               ✅
+  2. server: PUT /api/profile/me с auth middleware              ✅
+  3. user.tsx: handleLike → POST /api/likes                     ✅
+  4. user.tsx: при мэтче POST /api/chats                        ✅
+  5. Photo upload: FormData → /api/upload                       ✅
+  6. Auth middleware на /api/profile/me                          ✅
+  7. onboarding: MySQL API + fallback localStorage               ✅
+  8. register: сохраняет токен, /onboarding                      ✅
 
-## Предыдущие изменения
-- LoginPrompt: кнопка «На главную», fallback иконки при ошибке загрузки
-- Admin Media Library: загрузка/удаление/превью/поиск/фильтр по типу/дате
-- Admin Health endpoint: uptime, error rate, avg latency, DB ping
-- Все 8 админ-страниц на реальном API (Dashboard, Users, Reports, Features, Analytics, Messaging, Monetization)
-- Groups в нижнем меню; Notifications убрано
-- Education: общий EditableList вместо EducationList
-- Chats: WebSocket (send/receive/typing), group chats
-- Profile: исправлен TDZ joinedGroupNames, LoginPrompt guard
-- Admin: кнопки «Создать пользователя» и «Сбросить пароль»
-- Vite proxy: /uploads → localhost:3001
+🟠 Фаза 2 — Social Features ✅
+  9. /matches страница + GET /api/matches + навигация            ✅
+ 10. /premium: GET tiers, /my, POST purchase                     ✅
+ 11. Groups: POST /api/groups + UI                               ✅
+ 12. Groups: POST /api/groups/:id/join + GET /api/groups/my      ✅
+ 13. Contest: POST /api/contest/vote + сердечко на подиуме       ✅
+ 14. Online status: WS user:online/offline + зелёная точка       ✅
+ 15. Typing: WS chat:typing + индикатор в чате                   ✅
+
+🟡 Фаза 3 — Admin & Moderation ⬜
+ 16. Email-рассылки (SendGrid/Resend)
+ 17. Push-уведомления (FCM/VAPID)
+ 18. Бан пользователя + разлогин
+ 19. Real-time модерация слов
+ 20. История действий в админке
+ 21. Имперсонация
+
+🟢 Фаза 4 — Monetization ⬜
+ 22. Платёжный шлюз (Stripe/CloudPayments/ЮKassa)
+ 23. Премиум-фичи (скрыть за подпиской)
+ 24. Рекламные баннеры (showAds)
+
+🔵 Фаза 5 — Polish ⬜
+ 25. Геопоиск по радиусу
+ 26. История просмотров
+ 27. AI-рекомендации
+ 28. Сохранение attachment-теста
+ 29. Удаление сообщений
+ 30. Системные уведомления
+
+=== ТЕКУЩИЙ КОММИТ ===
+54841fa — Phase 2: Social Features (matches, groups, contest, premium)
+
+=== ЗАПУСК ===
+запуск-всего.bat → MySQL + API (3001) + Frontend (8081)
