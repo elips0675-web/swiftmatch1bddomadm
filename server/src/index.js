@@ -28,6 +28,7 @@ import chatRoutes from './routes/chats.js'
 import groupRoutes from './routes/groups.js'
 import contestRoutes from './routes/contest.js'
 import premiumRoutes from './routes/premium.js'
+import pushRoutes from './routes/push.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -135,6 +136,7 @@ app.use(chatRoutes)
 app.use(groupRoutes)
 app.use(contestRoutes)
 app.use(premiumRoutes)
+app.use(pushRoutes)
 
 let totalReq = 0
 let totalErr = 0

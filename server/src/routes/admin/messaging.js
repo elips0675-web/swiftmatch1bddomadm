@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import pool from '../../db.js'
+import { sendPushToAll } from '../push.js'
 
 const router = Router()
 
@@ -77,6 +78,9 @@ router.post('/campaigns', async (req, res) => {
       const result = await sendEmails(title, body, target)
       delivered = result.delivered
       total = result.total
+    } else if (channel === 'push') {
+      delivered = await sendPushToAll(title, body)
+      total = delivered
     }
 
     const [result] = await pool.query(

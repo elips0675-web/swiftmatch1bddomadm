@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/context/language-context";
-import { requestNotificationPermission } from "@/lib/push-notifications";
+import { requestNotificationPermission, subscribeToPush, unsubscribeFromPush } from "@/lib/push-notifications";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -55,8 +55,8 @@ export default function SettingsPage() {
 
   const handlePushChange = async (val: boolean) => {
     if (val) {
-      const granted = await requestNotificationPermission();
-      if (!granted) {
+      const ok = await subscribeToPush()
+      if (!ok) {
         toast({
           variant: "destructive",
           title: t('settings.push_denied_title'),
@@ -64,6 +64,8 @@ export default function SettingsPage() {
         });
         return;
       }
+    } else {
+      await unsubscribeFromPush()
     }
     setSettings({ ...settings, pushNotifications: val });
     toast({
