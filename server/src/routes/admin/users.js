@@ -1,5 +1,9 @@
 import { Router } from 'express'
+import jwt from 'jsonwebtoken'
 import pool from '../../db.js'
+import { getIO } from '../../ws.js'
+
+const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
 
 const router = Router()
 
@@ -95,6 +99,8 @@ router.post('/users/:id/ban', async (req, res) => {
       'INSERT INTO moderation_log (admin_id, target_user_id, action, reason) VALUES (?, ?, ?, ?)',
       [req.admin.id, req.params.id, 'ban', req.body.reason || 'No reason'],
     )
+    const io = getIO()
+    if (io) io.to(`user:${req.params.id}`).emit('user:banned', { reason: req.body.reason })
     res.json({ message: 'User banned' })
   } catch (err) {
     console.error('Ban error:', err)
@@ -184,6 +190,42 @@ router.post('/users/:id/reset-password', async (req, res) => {
   } catch (err) {
     console.error('Reset password error:', err)
     res.status(500).json({ message: 'Failed to reset password' })
+  }
+})
+
+// ─── Activity log ──────────────────────────────────────────────
+router.get('/users/:id/activity', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT al.id, al.action_type, al.target_id, al.metadata, al.created_at
+       FROM activity_log al
+       WHERE al.user_id = ?
+       ORDER BY al.created_at DESC
+       LIMIT 50`,
+      [req.params.id],
+    )
+    res.json(rows)
+  } catch (err) {
+    console.error('Activity log error:', err)
+    res.status(500).json({ message: 'Failed to fetch activity' })
+  }
+})
+
+// ─── Impersonation ─────────────────────────────────────────────
+router.post('/users/:id/impersonate', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id, email FROM users WHERE id = ?', [req.params.id])
+    if (rows.length === 0) return res.status(404).json({ message: 'User not found' })
+
+    const token = jwt.sign(
+      { userId: rows[0].id, role: 'user', impersonator: req.admin?.id },
+      JWT_SECRET,
+      { expiresIn: '1h' },
+    )
+    res.json({ token, user: rows[0] })
+  } catch (err) {
+    console.error('Impersonation error:', err)
+    res.status(500).json({ message: 'Failed to impersonate' })
   }
 })
 

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Search, MoveHorizontal as MoreHorizontal, Download, ChevronLeft, ChevronRight, Ban, Trash2, TriangleAlert as AlertTriangle, UserCheck, RefreshCw, UserPlus } from "lucide-react";
+import { Search, MoveHorizontal as MoreHorizontal, Download, ChevronLeft, ChevronRight, Ban, Trash2, TriangleAlert as AlertTriangle, UserCheck, RefreshCw, UserPlus, LogIn, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { exportToCsv } from "@/lib/admin-mock-data";
 import { getToken } from "@/lib/token";
@@ -66,6 +66,9 @@ export default function AdminUsersPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ email: '', password: 'qweasdzxc123456', name: '', age: 25, city: '', gender: 'male' });
   const [creating, setCreating] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<'info' | 'activity'>('info');
+  const [activityLog, setActivityLog] = useState<any[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   const handleCreateUser = async () => {
     if (!createForm.email) return;
@@ -219,6 +222,34 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleImpersonate = async (userId: number) => {
+    try {
+      const token = getToken();
+      const res = await fetch(`/api/admin/users/${userId}/impersonate`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      localStorage.setItem('token', data.token);
+      window.open('/', '_blank');
+      toast.success('Impersonating user — new tab opened');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to impersonate');
+    }
+  };
+
+  useEffect(() => {
+    if (!drawerUser || drawerTab !== 'activity') return;
+    setActivityLoading(true);
+    const token = getToken();
+    fetch(`/api/admin/users/${drawerUser.id}/activity`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setActivityLog(data))
+      .catch(() => setActivityLog([]))
+      .finally(() => setActivityLoading(false));
+  }, [drawerUser, drawerTab]);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3 items-center">
@@ -325,6 +356,9 @@ export default function AdminUsersPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="rounded-xl">
                         <DropdownMenuItem onClick={() => setDrawerUser(user)}>{t('admin.users.view')}</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleImpersonate(user.id)}>
+                          <LogIn size={12} className="mr-2" /> Login as User
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleBanToggle(user.id, user.status === 'banned')}>
                           {user.status === 'banned' ? t('admin.users.unblock') : t('admin.users.block')}
                         </DropdownMenuItem>
@@ -364,7 +398,12 @@ export default function AdminUsersPage() {
                 </SheetTitle>
                 <SheetDescription>{drawerUser.email}</SheetDescription>
               </SheetHeader>
-              <div className="mt-6 space-y-4">
+              <div className="flex gap-2 mt-4 mb-2">
+                <button onClick={() => setDrawerTab('info')} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-colors ${drawerTab === 'info' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>{t('admin.users.info')}</button>
+                <button onClick={() => setDrawerTab('activity')} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-colors ${drawerTab === 'activity' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}><Activity size={12} className="inline mr-1" />Activity</button>
+              </div>
+              {drawerTab === 'info' ? (
+              <div className="mt-2 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-xl bg-muted/50"><p className="text-[10px] font-bold text-muted-foreground uppercase">{t('admin.users.city')}</p><p className="font-bold text-sm">{drawerUser.city}</p></div>
                   <div className="p-3 rounded-xl bg-muted/50"><p className="text-[10px] font-bold text-muted-foreground uppercase">{t('admin.users.plan')}</p><p className="font-bold text-sm">{PREMIUM_LABELS[drawerUser.premium] || drawerUser.premium}</p></div>
@@ -397,11 +436,30 @@ export default function AdminUsersPage() {
                   }}>
                     {drawerUser.status === 'banned' ? <><UserCheck size={14} className="mr-1" /> {t('admin.users.unblock')}</> : <><Ban size={14} className="mr-1" /> {t('admin.users.block')}</>}
                   </Button>
+                  <Button size="sm" variant="outline" className="rounded-xl" onClick={() => handleImpersonate(drawerUser.id)}>
+                    <LogIn size={14} className="mr-1" /> Login
+                  </Button>
                   <Button size="sm" variant="destructive" className="rounded-xl" onClick={() => handleDelete(drawerUser.id)}><Trash2 size={14} /></Button>
                 </div>
               </div>
-            </>
-          )}
+              ) : (
+                <div className="mt-2 space-y-2">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">Activity Log</p>
+                  {activityLoading ? (
+                    <p className="text-sm text-muted-foreground">Loading...</p>
+                  ) : activityLog.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No activity recorded</p>
+                  ) : (
+                    activityLog.map((a: any) => (
+                      <div key={a.id} className="p-2 rounded-lg bg-muted/30 border text-xs">
+                        <span className="font-bold">{a.action_type}</span>
+                        {a.metadata && <span className="text-muted-foreground ml-1">{typeof a.metadata === 'string' ? a.metadata : JSON.stringify(a.metadata)}</span>}
+                        <div className="text-[10px] text-muted-foreground mt-0.5">{new Date(a.created_at).toLocaleString()}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
         </SheetContent>
       </Sheet>
 

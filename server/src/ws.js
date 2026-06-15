@@ -1,6 +1,7 @@
 import { Server } from 'socket.io'
 import jwt from 'jsonwebtoken'
 import pool from './db.js'
+import { getBannedWords, containsBannedWord } from './banned-words.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
 
@@ -54,6 +55,12 @@ export function setupWebSocket(server) {
     socket.on('chat:message', async (data) => {
       const { chatId, text, replyTo } = data
       if (!text || !chatId) return
+
+      const bannedWords = await getBannedWords()
+      if (containsBannedWord(text, bannedWords)) {
+        socket.emit('chat:error', { message: 'Message contains prohibited content' })
+        return
+      }
 
       const [participant] = await pool.query(
         'SELECT chat_id FROM chat_participants WHERE chat_id = ? AND user_id = ?',

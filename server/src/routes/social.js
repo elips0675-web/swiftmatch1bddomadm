@@ -2,6 +2,7 @@ import { Router } from 'express'
 import jwt from 'jsonwebtoken'
 import pool from '../db.js'
 import { getIO } from '../ws.js'
+import { getBannedWords, containsBannedWord } from '../banned-words.js'
 
 const router = Router()
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production'
@@ -253,6 +254,11 @@ router.get('/api/chats/:chatId/messages', auth, async (req, res) => {
 router.post('/api/chats/:chatId/messages', auth, async (req, res) => {
   const { text } = req.body
   if (!text) return res.status(400).json({ message: 'Text is required' })
+
+  const bannedWords = await getBannedWords()
+  if (containsBannedWord(text, bannedWords)) {
+    return res.status(403).json({ message: 'Message contains prohibited content' })
+  }
 
   try {
     const [participant] = await pool.query(
