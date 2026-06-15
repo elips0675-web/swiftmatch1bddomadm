@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from "@/shims/next-navigation";
 import { getSupabase } from "@/lib/supabase";
 import { ChevronLeft, Check, Chrome as Home, Repeat } from 'lucide-react';
+import { getToken } from "@/lib/token";
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,23 @@ export default function AttachmentStyleTestPage() {
 
   const saveResult = async (result: AttachmentStyle) => {
     setIsSaving(true);
+
+    const token = getToken()
+    if (token) {
+      try {
+        const res = await fetch('/api/profile/me', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ attachment_style: result }),
+        })
+        if (res.ok) {
+          toast({ title: t('attach.toast.saved'), description: `${t('attach.toast.your_style')} ${t(ATTACHMENT_STYLE_INFO[result].labelKey)}` });
+          setIsSaving(false);
+          return
+        }
+      } catch {}
+    }
+
     const savedProfile = localStorage.getItem('userProfile');
     if (savedProfile) {
         try {
@@ -53,26 +71,17 @@ export default function AttachmentStyleTestPage() {
         } catch(e) {}
     }
 
-    if (!supabase) {
-        setIsSaving(false);
-        toast({ title: t('attach.toast.done'), description: `${t('attach.toast.your_style')} ${t(ATTACHMENT_STYLE_INFO[result].labelKey)}` });
-        return;
-    };
-    try {
+    if (supabase) {
+      try {
         const { data: { user: authUser } } = await supabase.auth.getUser()
         if (authUser) {
-          await supabase
-            .from('profiles')
-            .update({ attachment_style: result })
-            .eq('id', authUser.id)
+          await supabase.from('profiles').update({ attachment_style: result }).eq('id', authUser.id)
         }
-        toast({ title: t('attach.toast.saved'), description: `${t('attach.toast.your_style')} ${t(ATTACHMENT_STYLE_INFO[result].labelKey)}` });
-    } catch (error) {
-        console.error("Error saving attachment style:", error);
-        toast({ title: t('attach.toast.save_error'), variant: "destructive" });
-    } finally {
-        setIsSaving(false);
+      } catch {}
     }
+
+    setIsSaving(false);
+    toast({ title: t('attach.toast.done'), description: `${t('attach.toast.your_style')} ${t(ATTACHMENT_STYLE_INFO[result].labelKey)}` });
   }
 
   const resetTest = () => {

@@ -170,9 +170,20 @@ router.put('/api/profile/me', auth, async (req, res) => {
 
 router.get('/api/users/search', async (req, res) => {
   try {
-    const { q, age_min, age_max, city, gender, goal, interest, page = '1', limit = '20' } = req.query
+    const { q, age_min, age_max, city, gender, goal, interest, lat, lng, radius, page = '1', limit = '20' } = req.query
     const offset = (parseInt(page) - 1) * parseInt(limit)
-    let sql = `SELECT up.id, up.display_name, up.name, up.age, up.avatar_url, up.city, up.online, up.gender, up.looking_for, up.dating_goal
+
+    const hasGeo = lat && lng && radius
+    const userLat = hasGeo ? parseFloat(lat) : 0
+    const userLng = hasGeo ? parseFloat(lng) : 0
+
+    let distanceExpr = hasGeo
+      ? `, ROUND(6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(${userLat}) - RADIANS(up.lat)) / 2), 2) + COS(RADIANS(${userLat})) * COS(RADIANS(up.lat)) * POWER(SIN((RADIANS(${userLng}) - RADIANS(up.lng)) / 2), 2))), 1) AS distance`
+      : ''
+
+    let having = hasGeo ? ` HAVING distance < ${Number(radius)}` : ''
+
+    let sql = `SELECT up.id, up.display_name, up.name, up.age, up.avatar_url, up.city, up.online, up.gender, up.looking_for, up.dating_goal${distanceExpr}
                FROM user_profiles up
                JOIN users u ON u.id = up.id AND u.is_active = 1
                WHERE 1=1`
@@ -185,6 +196,7 @@ router.get('/api/users/search', async (req, res) => {
     if (gender && gender !== 'all') { sql += ' AND up.gender = ?'; params.push(gender) }
     if (goal && goal !== 'all') { sql += ' AND up.dating_goal = ?'; params.push(goal) }
 
+    sql += having
     sql += ' ORDER BY up.online DESC, up.last_seen DESC LIMIT ? OFFSET ?'
     params.push(parseInt(limit), offset)
 

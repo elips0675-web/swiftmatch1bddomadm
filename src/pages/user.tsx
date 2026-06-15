@@ -118,6 +118,13 @@ function UserProfileContent() {
         const photoUrls = data.photos?.length ? data.photos : [data.img || PlaceHolderImages[1].imageUrl]
         while (photoUrls.length < 5) { photoUrls.push(PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)].imageUrl) }
         setPhotos(photoUrls.slice(0, 5))
+        if (token) {
+          fetch('/api/activity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ action_type: 'profile_view', target_id: userId }),
+          }).catch(() => {})
+        }
       })
       .catch(() => router.replace('/'))
       .finally(() => setLoadingUser(false))

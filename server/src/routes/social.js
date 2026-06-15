@@ -19,11 +19,53 @@ function auth(req, res, next) {
 
 // ─── Search / Discovery ────────────────────────────────────────
 router.get('/api/users/search', auth, async (req, res) => {
-  const { gender, looking_for, age_min, age_max, city, interest } = req.query
+  const { gender, looking_for, age_min, age_max, city, interest, lat, lng, radius } = req.query
   try {
-    let sql = `SELECT DISTINCT up.id, up.display_name, up.name, up.age, up.gender, up.city, up.country, up.avatar_url, up.online, up.last_seen, up.dating_goal
-               FROM user_profiles up WHERE up.id != ?`
-    const params = [req.userId]
+    let sql, params
+
+    const hasGeo = lat && lng && radius
+    let userLat = 0, userLng = 0
+    if (hasGeo) {
+      userLat = parseFloat(lat)
+      userLng = parseFloat(lng)
+    }
+
+    const [[self]] = await pool.query('SELECT attachment_style, lat, lng FROM user_profiles WHERE id = ?', [req.userId])
+    const userStyle = self?.attachment_style
+
+    let compJoin = ''
+    let compSelect = ''
+    let orderBy = 'up.online DESC, up.last_seen DESC'
+    if (userStyle) {
+      compJoin = ` LEFT JOIN compatibility_scores cs ON cs.style_a = '${userStyle}' AND cs.style_b = up.attachment_style`
+      compSelect = ', COALESCE(cs.score, 0) AS compatibility_score'
+      orderBy = 'COALESCE(cs.score, 0) DESC, up.online DESC, up.last_seen DESC'
+    }
+
+    const baseSelect = `up.id, up.display_name, up.name, up.age, up.gender, up.city, up.country, up.avatar_url, up.online, up.last_seen, up.dating_goal${compSelect}`
+
+    let distanceExpr = hasGeo
+      ? userLat
+        ? `, ROUND(6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(${userLat}) - RADIANS(up.lat)) / 2), 2) + COS(RADIANS(${userLat})) * COS(RADIANS(up.lat)) * POWER(SIN((RADIANS(${userLng}) - RADIANS(up.lng)) / 2), 2))), 1) AS distance`
+        : ''
+      : ''
+    let having = hasGeo && userLat ? ` HAVING distance < ${Number(radius)}` : ''
+
+    if (interest) {
+      sql = `SELECT DISTINCT ${baseSelect}${distanceExpr}
+             FROM user_profiles up
+             JOIN user_interests ui ON ui.user_id = up.id
+             JOIN interests i ON i.id = ui.interest_id
+             ${compJoin}
+             WHERE up.id != ? AND (i.name_ru = ? OR i.name_en = ?)`
+      params = [req.userId, interest, interest]
+    } else {
+      sql = `SELECT ${baseSelect}${distanceExpr}
+             FROM user_profiles up
+             ${compJoin}
+             WHERE up.id != ?`
+      params = [req.userId]
+    }
 
     if (gender) { sql += ' AND up.gender = ?'; params.push(gender) }
     if (looking_for) { sql += ' AND up.looking_for = ?'; params.push(looking_for) }
@@ -31,16 +73,8 @@ router.get('/api/users/search', auth, async (req, res) => {
     if (age_max) { sql += ' AND up.age <= ?'; params.push(Number(age_max)) }
     if (city) { sql += ' AND up.city = ?'; params.push(city) }
 
-    if (interest) {
-      sql = `SELECT DISTINCT up.id, up.display_name, up.name, up.age, up.gender, up.city, up.country, up.avatar_url, up.online, up.last_seen, up.dating_goal
-             FROM user_profiles up
-             JOIN user_interests ui ON ui.user_id = up.id
-             JOIN interests i ON i.id = ui.interest_id
-             WHERE up.id != ? AND (i.name_ru = ? OR i.name_en = ?)`
-      params.splice(0, params.length, req.userId, interest, interest)
-    }
-
-    sql += ' ORDER BY up.online DESC, up.last_seen DESC LIMIT 50'
+    sql += having
+    sql += ` ORDER BY ${orderBy} LIMIT 50`
 
     const [rows] = await pool.query(sql, params)
     res.json(rows)
@@ -285,6 +319,23 @@ router.post('/api/chats/:chatId/messages', auth, async (req, res) => {
   } catch (err) {
     console.error('Message send error:', err)
     res.status(500).json({ message: 'Failed to send message' })
+  }
+})
+
+// ─── Delete message ────────────────────────────────────────────
+router.delete('/api/chats/:chatId/messages/:msgId', auth, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT sender_id FROM messages WHERE id = ? AND chat_id = ?',
+      [req.params.msgId, req.params.chatId],
+    )
+    if (rows.length === 0) return res.status(404).json({ message: 'Message not found' })
+    if (rows[0].sender_id !== req.userId) return res.status(403).json({ message: 'Not your message' })
+    await pool.query('DELETE FROM messages WHERE id = ?', [req.params.msgId])
+    res.json({ message: 'Message deleted' })
+  } catch (err) {
+    console.error('Delete message error:', err)
+    res.status(500).json({ message: 'Failed to delete message' })
   }
 })
 
