@@ -50,6 +50,16 @@ npx vite --port 8081 --host
 
 ## Статус проекта по этапам
 
+```
+Фаза 1 — Core User Flow    ✅  8/8
+Фаза 2 — Social Features   ✅  7/7
+Фаза 3 — Admin & Moderation ✅  6/6
+Фаза 4 — Monetization      ⬜  0/3
+Фаза 5 — Polish & Advanced ✅  6/6
+─────────────────────────────────
+Всего:                      ✅ 27/30 (90%)
+```
+
 ### 🔴 Фаза 1 — Core User Flow ✅
 *Регистрация → анкета → лайки → мэтч → чат*
 
@@ -96,16 +106,16 @@ npx vite --port 8081 --host
 | 23 | Премиум-фичи (скрыть лайки/фильтры без подписки) | ⬜ |
 | 24 | Рекламные баннеры по фича-флагу `showAds` | ⬜ |
 
-### 🔵 Фаза 5 — Polish & Advanced (очередь)
+### 🔵 Фаза 5 — Polish & Advanced ✅
 
 | # | Что | Статус |
 |---|---|---|
-| 25 | Геопоиск по радиусу (координаты + `HAVING distance`) | ⬜ |
-| 26 | История просмотров — кто смотрел мой профиль | ⬜ |
-| 27 | AI-рекомендации (совместимость по interests + zodiac + style) | ⬜ |
-| 28 | Сохранение attachment-теста в профиль | ⬜ |
-| 29 | Удаление сообщений (`DELETE /api/chats/:id/messages/:msgId`) | ⬜ |
-| 30 | Системные уведомления (Service Worker + Notification API) | ⬜ |
+| 25 | Геопоиск по радиусу — Haversine distance (`lat`/`lng`/`radius` params) | ✅ |
+| 26 | История просмотров — `profile_view` логируется в `activity_log` + вкладка Visits | ✅ |
+| 27 | AI-рекомендации — `compatibility_scores` JOIN, сортировка по совместимости | ✅ |
+| 28 | Сохранение attachment-теста — `PUT /api/profile/me` c `attachment_style` | ✅ |
+| 29 | Удаление сообщений — `DELETE /api/chats/:id/messages/:msgId` + кнопка X на своих | ✅ |
+| 30 | Системные уведомления — Service Worker + Push API | ✅ |
 
 ---
 
@@ -117,6 +127,14 @@ npx vite --port 8081 --host
 - Push: кампании с `channel='push'` теперь реально отправляют push-уведомления
 - Push: settings.tsx подписывается/отписывается через `pushManager.subscribe`
 - Banned words: новый хелпер `server/src/banned-words.js` (кэширование 60s)
+
+### Фаза 5 — Polish ✅ (`4bdd1ea`)
+- Delete messages: `DELETE /api/chats/:chatId/messages/:msgId` + hover X на своих сообщениях
+- Geo search: Haversine distance formula в social.js + profile.js (`lat`/`lng`/`radius` params)
+- AI recommendations: `compatibility_scores` JOIN, `ORDER BY score DESC` в поиске
+- Attachment test: `PUT /api/profile/me` с `attachment_style` (приоритет API, fallback localStorage/Supabase)
+- View history: `profile_view` логируется в `POST /api/activity` при просмотре профиля
+- System notifications: Service Worker + Push API (Phase 3)
 - Banned words: проверка в `POST /api/chats/:chatId/messages` + в WebSocket `chat:message`
 - Banned words: при нарушении WS шлёт `chat:error`, REST → 403
 - Email: `nodemailer` в зависимостях; `sendEmails()` рассылает через SMTP (из .env)

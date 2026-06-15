@@ -1,47 +1,58 @@
 === СТАТУС ПРОЕКТА ПО ФАЗАМ ===
 
-🔴 Фаза 1 — Core User Flow ✅
-  1-8: Регистрация → анкета → лайки → мэтч → чат              8/8
+Фаза 1 — Core User Flow    ✅  8/8
+Фаза 2 — Social Features   ✅  7/7
+Фаза 3 — Admin & Moderation ✅  6/6
+Фаза 4 — Monetization      ⬜  0/3
+Фаза 5 — Polish & Advanced ✅  6/6
+─────────────────────────────────
+Всего:                      ✅ 27/30 (90%)
 
-🟠 Фаза 2 — Social Features ✅
-  9-15: Мэтчи, премиум, группы, конкурс, онлайн, typing       7/7
+=== ДЕТАЛИ ===
 
-🟡 Фаза 3 — Admin & Moderation ✅
- 16. Email-рассылки (nodemailer/SMTP)                          ✅
- 17. Push-уведомления (VAPID + web-push + subscribe/dispatch)   ✅
- 18. Бан + WS user:banned (разлогин)                           ✅
- 19. Запрещённые слова в чатах (REST + WS)                     ✅
- 20. История действий (activity_log) в карточке юзера           ✅
- 21. Имперсонация (endpoint + кнопка Login as User)            ✅
+🔴 Фаза 1 — Регистрация → анкета → лайки → мэтч → чат
+  ✅ profile-edit: /api/profile/me + Bearer
+  ✅ server: PUT /api/profile/me с auth
+  ✅ user.tsx: handleLike → POST /api/likes + POST /api/chats
+  ✅ Photo upload: FormData → /api/upload
+  ✅ onboarding: MySQL API + fallback localStorage
+  ✅ register: сохраняет токен, /onboarding
 
-🟢 Фаза 4 — Monetization ⬜
- 22. Платёжный шлюз (Stripe/CloudPayments/ЮKassa)
- 23. Премиум-фичи (скрыть за подпиской)
- 24. Рекламные баннеры (showAds)
+🟠 Фаза 2 — Мэтчи, группы, конкурс, премиум
+  ✅ /matches страница + API
+  ✅ /premium: tiers, my, purchase
+  ✅ Groups: create, join, my-groups
+  ✅ Contest: vote endpoint + UI
+  ✅ Online status + Typing indicator
 
-🔵 Фаза 5 — Polish ⬜
- 25. Геопоиск по радиусу
- 26. История просмотров
- 27. AI-рекомендации
- 28. Сохранение attachment-теста
- 29. Удаление сообщений
- 30. Системные уведомления (Service Worker)
+🟡 Фаза 3 — Админка и модерация
+  ✅ Email-рассылки (nodemailer/SMTP)
+  ✅ Push-уведомления (VAPID + web-push)
+  ✅ Бан + WS user:banned (разлогин)
+  ✅ Запрещённые слова в чатах (REST + WS)
+  ✅ История действий в карточке юзера
+  ✅ Имперсонация (endpoint + кнопка)
 
-=== ПРОГРЕСС ===
-Сервер:    ██████████████████  98% (все роуты работают)
-Фронтенд:  ████████████████░░  85% (27/32 страниц)
-UI/UX:     ████████████████░░  85%
-Админка:   ██████████████████  95%
-Реальность:██████████████░░░░  75% (всё кроме платежей и пуша)
+🟢 Фаза 4 — Монетизация ⬜
+  ⬜ Платёжный шлюз (Stripe/CloudPayments/ЮKassa)
+  ⬜ Премиум-фичи (скрыть за подпиской)
+  ⬜ Рекламные баннеры (showAds)
 
-=== ТЕКУЩИЙ КОММИТ ===
-988b546 — Phase 3: Admin & Moderation
+🔵 Фаза 5 — Полировка
+  ✅ Геопоиск по радиусу (Haversine)
+  ✅ История просмотров (profile_view → activity_log)
+  ✅ AI-рекомендации (compatibility_scores)
+  ✅ Сохранение attachment-теста
+  ✅ Удаление сообщений
+  ✅ Системные уведомления (SW + Push)
 
-=== .env для рассылок (опционально) ===
+=== .env ДЛЯ РАССЫЛОК ===
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
 SMTP_HOST=smtp.mail.ru
 SMTP_PORT=465
 SMTP_USER=your@mail.ru
 SMTP_PASS=your-password
 
-=== ЗАПУСК ===
-запуск-всего.bat → MySQL + API (3001) + Frontend (8081)
+=== ТЕКУЩИЙ КОММИТ ===
+4bdd1ea — Phase 5: Polish
