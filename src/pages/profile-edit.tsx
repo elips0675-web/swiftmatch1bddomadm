@@ -77,7 +77,7 @@ const NAME_TO_KEY: Record<string, string> = {
   'Sports': 'interest.sport', 'Music': 'interest.music', 'Photography': 'interest.photography',
   'Travel': 'interest.travel', 'Coffee': 'interest.coffee', 'Art': 'interest.art',
   'Movies': 'interest.movies', 'Yoga': 'interest.yoga', 'Business': 'interest.business',
-  'Gaming': 'interest.games', 'Cats': 'interest.animals', 'Books': 'interest.books',
+  'Gaming': 'interest.games', 'Games': 'interest.games', 'Cats': 'interest.animals', 'Books': 'interest.books',
   'Cooking': 'interest.cooking', 'Nature': 'interest.nature', 'Design': 'interest.design',
   'Fashion': 'interest.fashion', 'Dance': 'interest.dance',
   'Tech': 'interest.tech', 'Animals': 'interest.animals', 'Volunteering': 'interest.volunteering',
@@ -91,6 +91,7 @@ function normalizeObjectInterests(interests: any): string[] {
   if (!Array.isArray(interests)) return []
   return interests.map((i: any) => {
     if (typeof i === 'string') return i
+    if (i.slug) return NAME_TO_KEY[i.slug] || 'interest.' + i.slug
     const name = i.name_ru && !/^\?+$/.test(i.name_ru) ? i.name_ru : i.name_en
     return NAME_TO_KEY[name] || name
   }).filter((i: string) => i && !BANNED_WORDS.includes(i))
@@ -98,20 +99,22 @@ function normalizeObjectInterests(interests: any): string[] {
 
 function mapDbProfile(rows: any) {
   if (!rows) return null
-  const p = Array.isArray(rows) ? rows[0] : rows
+  const p = rows
   return {
-    displayName: p.display_name || p.displayName || '',
+    displayName: p.display_name || '',
     age: p.age || 24,
-    city: p.city || '',
-    height: p.height || 0,
+    city: p.city || 'Москва',
+    height: p.height || 172,
     gender: p.gender || 'female',
     lookingFor: p.looking_for || 'male',
     datingGoal: p.dating_goal || '',
     zodiac: p.zodiac || '',
+    circadian: p.circadian || null,
+    attachmentStyle: p.attachment_style || null,
+    education: p.education || null,
     bio: p.bio || '',
     interests: normalizeObjectInterests(p.interests),
     match: 87,
-    attachmentStyle: p.attachment_style || null,
     birthDate: p.birth_date || '2001-08-10',
     location: p.city || '',
     photos: p.photos || [],
@@ -140,27 +143,6 @@ export default function EditProfilePage() {
 
   useEffect(() => {
     (async () => {
-      const token = getToken()
-      const headers: Record<string, string> = {}
-      if (token) headers['Authorization'] = `Bearer ${token}`
-      try {
-        const res = await fetch('/api/profile/me', { headers })
-        if (res.ok) {
-          const data = await res.json()
-          const mapped = mapDbProfile(data)
-          const photoUrls = (data.photos || []).map((ph: any) => ph.url)
-          setProfile(mapped)
-          if (photoUrls.length > 0) setPhotos(photoUrls)
-          else {
-            const saved = localStorage.getItem('userProfileGallery')
-            if (saved) try { setPhotos(JSON.parse(saved)) } catch {}
-          }
-          localStorage.setItem('userProfile', JSON.stringify(mapped))
-          setIsLoading(false)
-          return
-        }
-      } catch {}
-
       const savedProfile = localStorage.getItem('userProfile');
       let parsed: any;
       if (savedProfile) {
@@ -170,7 +152,7 @@ export default function EditProfilePage() {
             parsed.interests = parsed.interests.filter((i: string) => !BANNED_WORDS.includes(i));
           }
           parsed.photos = Array.isArray(parsed.photos) ? parsed.photos : [];
-          parsed.displayName = parsed.displayName || parsed.name || t('profile.someone');
+          parsed.displayName = parsed.displayName || parsed.name || 'Someone';
         } catch (e) {
           console.error("Failed to parse profile", e);
           parsed = { ...DEFAULT_PROFILE };
@@ -192,6 +174,20 @@ export default function EditProfilePage() {
       }
 
       setIsLoading(false);
+
+      const token = getToken()
+      if (!token) return
+      try {
+        const res = await fetch('/api/profile/me', { headers: { Authorization: `Bearer ${token}` } })
+        if (res.ok) {
+          const data = await res.json()
+          const mapped = mapDbProfile(data)
+          const photoUrls = (data.photos || []).map((ph: any) => ph.url)
+          setProfile(mapped)
+          if (photoUrls.length > 0) setPhotos(photoUrls)
+          localStorage.setItem('userProfile', JSON.stringify(mapped))
+        }
+      } catch {}
     })()
   }, [t]);
 
@@ -212,7 +208,12 @@ export default function EditProfilePage() {
       const uid = getUserId()
       if (uid) uploadFormData.append('user_id', String(uid))
       uploadFormData.append('sort_order', String(photos.length))
-      fetch('/api/upload', { method: 'POST', body: uploadFormData }).catch(() => {})
+      const token = getToken()
+      fetch('/api/upload', {
+        method: 'POST',
+        body: uploadFormData,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }).catch(() => {})
 
       const reader = new FileReader();
       reader.onload = () => {
@@ -257,11 +258,6 @@ export default function EditProfilePage() {
   };
 
   const handleSave = async () => {
-    if (photos.length === 0) {
-      toast({ title: t('toast.save_error'), description: t('toast.save_error_desc'), variant: "destructive" });
-      return;
-    }
-
     setIsSaving(true);
 
     const cleanedInterests = (profile.interests || []).filter((i: string) => !BANNED_WORDS.includes(i));
@@ -277,37 +273,43 @@ export default function EditProfilePage() {
 
     try {
       const token = getToken()
-      const interestIds = (profile.interests || [])
-        .map((key: string) => INTEREST_KEY_TO_ID[key])
-        .filter(Boolean)
+      const interestKeys = (profile.interests || []).filter(Boolean)
 
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (token) headers['Authorization'] = `Bearer ${token}`
 
-      await fetch('/api/profile/me', {
+      const res = await fetch('/api/profile/me', {
         method: 'PUT',
         headers,
         body: JSON.stringify({
           display_name: profile.displayName,
           name: profile.displayName,
-          age: profile.age,
+          age: Number(profile.age) || 0,
           bio: profile.bio,
           gender: profile.gender,
           looking_for: profile.lookingFor,
           dating_goal: profile.datingGoal,
-          height: profile.height,
+          height: Number(profile.height) || null,
           city: profile.location || profile.city,
           zodiac: profile.zodiac,
-          interests: interestIds,
+          circadian: profile.circadian || null,
+          attachment_style: profile.attachmentStyle || null,
+          education: profile.education || null,
+          interests: interestKeys,
         }),
       })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.message || 'Save failed')
+      }
+      toast({ title: t('toast.profile_saved'), description: t('toast.profile_saved_desc') });
+      setIsSaving(false);
+      router.push("/profile");
     } catch (e) {
       console.error('Failed to save to API', e)
+      toast({ variant: 'destructive', title: 'Save failed', description: String(e) })
+      setIsSaving(false);
     }
-
-    toast({ title: t('toast.profile_saved'), description: t('toast.profile_saved_desc') });
-    setIsSaving(false);
-    router.push("/profile");
   };
 
   const toggleInterest = (interest: string) => {
@@ -409,20 +411,45 @@ export default function EditProfilePage() {
               <Input value={profile.displayName || ''} onChange={e => setProfile({ ...profile, displayName: e.target.value })} className="rounded-xl bg-muted/30 border-0 h-11 font-bold px-4 focus-visible:ring-primary/20" />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">{t('profile.label.gender')}</Label>
-                <Select value={profile.gender || ''} onValueChange={(val) => setProfile({ ...profile, gender: val, lookingFor: val === 'female' ? 'male' : profile.lookingFor })}>
-                  <SelectTrigger className="rounded-xl bg-muted/30 border-0 h-11 font-bold px-4"><SelectValue /></SelectTrigger>
-                  <SelectContent className="rounded-xl border-0 shadow-2xl">
-                    <SelectItem value="male" className="font-bold text-[11px]">{t('gender.male')}</SelectItem>
-                    <SelectItem value="female" className="font-bold text-[11px]">{t('gender.female')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">{t('profile.label.birth_date')}</Label>
-                <Input type="date" value={profile.birthDate?.split('T')[0] || ''} onChange={e => setProfile({ ...profile, birthDate: e.target.value })} className="rounded-xl bg-muted/30 border-0 h-11 font-bold px-4 focus-visible:ring-primary/20" />
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">{t('profile.label.gender')}</Label>
+              <Select value={profile.gender || ''} onValueChange={(val) => setProfile({ ...profile, gender: val })}>
+                <SelectTrigger className="rounded-xl bg-muted/30 border-0 h-11 font-bold px-4"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-xl border-0 shadow-2xl">
+                  <SelectItem value="male" className="font-bold text-[11px]">{t('gender.male')}</SelectItem>
+                  <SelectItem value="female" className="font-bold text-[11px]">{t('gender.female')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">{t('profile.label.looking_for')}</Label>
+              <Select value={profile.lookingFor || ''} onValueChange={(val) => setProfile({ ...profile, lookingFor: val })}>
+                <SelectTrigger className="rounded-xl bg-muted/30 border-0 h-11 font-bold px-4"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-xl border-0 shadow-2xl">
+                  <SelectItem value="male" className="font-bold text-[11px]">{t('gender.men')}</SelectItem>
+                  <SelectItem value="female" className="font-bold text-[11px]">{t('gender.women')}</SelectItem>
+                  <SelectItem value="both" className="font-bold text-[11px]">{t('gender.all')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">{t('profile.label.birth_date')}</Label>
+              <div className="flex gap-2">
+                <Input type="number" min="1" max="31" placeholder="DD" value={profile.birthDate ? profile.birthDate.split('-')[2] || '' : ''} onChange={e => {
+                  const parts = profile.birthDate?.split('-') || ['', '', '']
+                  const val = e.target.value.padStart(2, '0')
+                  setProfile({ ...profile, birthDate: `${parts[0] || ''}-${parts[1] || ''}-${val}` })
+                }} className="rounded-xl bg-muted/30 border-0 h-11 font-bold px-3 focus-visible:ring-primary/20 w-20 text-center" />
+                <Input type="number" min="1" max="12" placeholder="MM" value={profile.birthDate ? profile.birthDate.split('-')[1] || '' : ''} onChange={e => {
+                  const parts = profile.birthDate?.split('-') || ['', '', '']
+                  const val = e.target.value.padStart(2, '0')
+                  setProfile({ ...profile, birthDate: `${parts[0] || ''}-${val}-${parts[2] || ''}` })
+                }} className="rounded-xl bg-muted/30 border-0 h-11 font-bold px-3 focus-visible:ring-primary/20 w-20 text-center" />
+                <Input type="number" min="1900" max="2100" placeholder="YYYY" value={profile.birthDate ? profile.birthDate.split('-')[0] || '' : ''} onChange={e => {
+                  const parts = profile.birthDate?.split('-') || ['', '', '']
+                  setProfile({ ...profile, birthDate: `${e.target.value}-${parts[1] || ''}-${parts[2] || ''}` })
+                }} className="rounded-xl bg-muted/30 border-0 h-11 font-bold px-3 focus-visible:ring-primary/20 w-24 text-center" />
               </div>
             </div>
 

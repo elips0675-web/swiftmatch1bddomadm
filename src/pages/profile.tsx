@@ -139,7 +139,7 @@ function normalizeInterests(interests: any): string[] {
     'Sports': 'interest.sport', 'Music': 'interest.music', 'Photography': 'interest.photography',
     'Travel': 'interest.travel', 'Coffee': 'interest.coffee', 'Art': 'interest.art',
     'Movies': 'interest.movies', 'Yoga': 'interest.yoga', 'Business': 'interest.business',
-    'Gaming': 'interest.games', 'Cats': 'interest.animals', 'Books': 'interest.books',
+    'Gaming': 'interest.games', 'Games': 'interest.games', 'Cats': 'interest.animals', 'Books': 'interest.books',
     'Cooking': 'interest.cooking', 'Nature': 'interest.nature', 'Design': 'interest.design',
     'Fashion': 'interest.fashion', 'Dance': 'interest.dance',
     'Tech': 'interest.tech', 'Animals': 'interest.animals', 'Volunteering': 'interest.volunteering',
@@ -151,6 +151,7 @@ function normalizeInterests(interests: any): string[] {
   }
   return interests.map((i: any) => {
     if (typeof i === 'string') return i
+    if (i.slug) return nameToKey[i.slug] || 'interest.' + i.slug
     const ru = i.name_ru && !/^\?+$/.test(i.name_ru) ? i.name_ru : i.name_en
     return nameToKey[ru] || ru
   }).filter((i: string) => !BANNED_WORDS.includes(i))
@@ -172,7 +173,7 @@ function normalizeInterests(interests: any): string[] {
         setProfile({
           ...parsed,
           displayName: parsed.displayName || parsed.name || t('profile.someone'),
-          lookingFor: parsed.gender === 'female' ? 'male' : parsed.lookingFor,
+          lookingFor: parsed.lookingFor,
         });
       } catch (e) {
         console.error("Failed to parse profile", e);
@@ -195,13 +196,24 @@ function normalizeInterests(interests: any): string[] {
     }
 
     (async () => {
+      const token = getToken()
+      if (!token) return
+      const fallbackPhotos = () => {
+        const savedPhotos = localStorage.getItem('userProfileGallery');
+        if (savedPhotos) { setPhotos(JSON.parse(savedPhotos)); return }
+        const defaultPhotos = [PlaceHolderImages[0].imageUrl, PlaceHolderImages[2].imageUrl, PlaceHolderImages[4].imageUrl];
+        setPhotos(defaultPhotos);
+        localStorage.setItem('userProfileGallery', JSON.stringify(defaultPhotos));
+      }
       try {
-        const res = await fetch('/api/profile/2')
+        const res = await fetch('/api/profile/me', { headers: { Authorization: `Bearer ${token}` } })
         if (res.ok) {
           const data = await res.json()
           const apiInterests = normalizeInterests(data.interests)
+          const userId = data.id
           setProfile(prev => {
             const updated = {
+              id: userId,
               displayName: data.display_name || prev?.displayName || t('profile.someone'),
               age: data.age || prev?.age || 24,
               city: data.city || prev?.city || 'Москва',
@@ -210,6 +222,8 @@ function normalizeInterests(interests: any): string[] {
               lookingFor: data.looking_for || prev?.lookingFor || 'male',
               datingGoal: data.dating_goal || prev?.datingGoal || '',
               zodiac: data.zodiac || prev?.zodiac || '',
+              circadian: data.circadian || prev?.circadian || '',
+              education: data.education || prev?.education || '',
               bio: data.bio || prev?.bio || '',
               interests: apiInterests.length > 0 ? apiInterests : prev?.interests || [],
               match: prev?.match || 87,
@@ -218,30 +232,14 @@ function normalizeInterests(interests: any): string[] {
             localStorage.setItem('userProfile', JSON.stringify(updated))
             return { ...prev, ...updated }
           })
-          return
-        }
-      } catch {}
-    })();
-    
-    (async () => {
-      try {
-        const res = await fetch('/api/photos/2')
-        if (res.ok) {
-          const data = await res.json()
-          if (data.length > 0) {
-            setPhotos(data.map((p: any) => p.url))
-            return
+          const photosRes = await fetch('/api/photos/' + userId, { headers: { Authorization: `Bearer ${token}` } })
+          if (photosRes.ok) {
+            const photosData = await photosRes.json()
+            if (photosData.length > 0) { setPhotos(photosData.map((p) => p.url)); return }
           }
         }
       } catch {}
-      const savedPhotos = localStorage.getItem('userProfileGallery');
-      if (savedPhotos) {
-        setPhotos(JSON.parse(savedPhotos));
-      } else {
-        const defaultPhotos = [PlaceHolderImages[0].imageUrl, PlaceHolderImages[2].imageUrl, PlaceHolderImages[4].imageUrl];
-        setPhotos(defaultPhotos);
-        localStorage.setItem('userProfileGallery', JSON.stringify(defaultPhotos));
-      }
+      fallbackPhotos()
     })();
 
     const savedStories = localStorage.getItem('userProfileStories');
