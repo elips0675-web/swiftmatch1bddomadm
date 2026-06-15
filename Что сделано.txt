@@ -1,36 +1,20 @@
-Готово. Проект в C:\swiftmatch1 адаптирован для продакшена:
+Готово. Проект в C:\swiftmatch1bd адаптирован для локальной разработки с MySQL:
 
-Что сделано
-Типизация — создан src/types/index.ts с 20+ интерфейсами (UserProfile, AdminUser, Message, Chat, FeatureFlags, GroupCategory, etc). Все any заменены в demo-data.ts, utils.ts.
+## Фаза 1 — Core User Flow ✅ (июнь 2026)
+- profile-edit: сохраняет через /api/profile/me с Bearer-токеном
+- server: PUT /api/profile/me защищён auth middleware, использует req.userId
+- user.tsx: handleLike → POST /api/likes + при мэтче POST /api/chats
+- onboarding: сохраняет в MySQL API (fallback localStorage)
+- register: сохраняет токен, редирект на /onboarding
 
-API-клиент (src/lib/api.ts):
-
-Fetch-обёртка с Bearer-авторизацией, retry (exponential backoff), timeout
-Автоочистка токена при 401 + dispatch события auth:unauthorized
-Поддержка GET/POST/PUT/PATCH/DELETE, параметров запроса
-Auth (src/context/auth-context.tsx):
-
-Контекст с login/register/logout/loginWithGoogle
-JWT-токен в localStorage, проверка /auth/me при загрузке
-Слушатель события auth:unauthorized для глобального выхода
-Environment (.env.development, .env.production, .env.example):
-
-VITE_API_URL, VITE_WS_URL, VITE_SENTRY_DSN и др.
-Типизированный ImportMetaEnv в vite-env.d.ts
-Валидация обязательных переменных в production
-Error handling:
-
-ErrorBoundary — ловит ошибки рендера, кнопка "Попробовать снова"
-LoadingScreen, PageLoading, LoadingSpinner — единые компоненты загрузки
-Билд (vite.config.ts):
-
-lazy() + Suspense для всех 33 страниц — код грузится по запросу
-manualChunks: vendor (React 164KB), ui (Radix 94KB), animations (Framer 128KB), charts (Recharts 415KB)
-Sourcemap только в dev, target ES2020
-Тесты — 3 файла, 16 тестов (API client: запросы, токен, retry, timeout, 401; utils: cn merge, title logic; проходят за 1с)
-
-Запуск
-cd C:\swiftmatch1
-npm run dev        # dev-сервер на localhost:8080
-npm test           # vitest
-npm run build      # production build
+## Предыдущие изменения
+- LoginPrompt: кнопка «На главную», fallback иконки при ошибке загрузки
+- Admin Media Library: загрузка/удаление/превью/поиск/фильтр по типу/дате
+- Admin Health endpoint: uptime, error rate, avg latency, DB ping
+- Все 8 админ-страниц на реальном API (Dashboard, Users, Reports, Features, Analytics, Messaging, Monetization)
+- Groups в нижнем меню; Notifications убрано
+- Education: общий EditableList вместо EducationList
+- Chats: WebSocket (send/receive/typing), group chats
+- Profile: исправлен TDZ joinedGroupNames, LoginPrompt guard
+- Admin: кнопки «Создать пользователя» и «Сбросить пароль»
+- Vite proxy: /uploads → localhost:3001

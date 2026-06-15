@@ -39,6 +39,7 @@ const translations = {
     'nav.chats': 'Чаты',
     'nav.profile': 'Профиль',
     'nav.groups': 'Группы',
+    'nav.matches': 'Мэтчи',
     'nav.notifications': 'Уведомления',
     'notification.mark_all_read': 'Прочитать все',
     // Common Buttons
@@ -219,6 +220,12 @@ const translations = {
     'swipes.nearby': 'анкет рядом',
     'match.insight_default': 'Вы отлично подходите друг другу!',
     'match.liked_each_other': 'понравились друг другу.',
+    'matches.title': 'Мэтчи',
+    'matches.subtitle': 'Все, кто вам взаимно понравились',
+    'matches.empty_title': 'Пока нет мэтчей',
+    'matches.empty_desc': 'Ставьте лайки, чтобы находить новых друзей',
+    'matches.start_searching': 'Начать поиск',
+    'profile.years_old': 'лет',
     'user.match_score': 'Совпадение',
     'user.from_you': 'от вас',
     // Filter
@@ -1092,6 +1099,7 @@ const translations = {
     'nav.chats': 'Chats',
     'nav.profile': 'Profile',
     'nav.groups': 'Groups',
+    'nav.matches': 'Matches',
     'nav.notifications': 'Notifications',
     'notification.mark_all_read': 'Mark all read',
     // Common Buttons
@@ -1272,6 +1280,12 @@ const translations = {
     'swipes.nearby': 'profiles nearby',
     'match.insight_default': 'You are a great match!',
     'match.liked_each_other': 'liked each other.',
+    'matches.title': 'Matches',
+    'matches.subtitle': 'People who liked you back',
+    'matches.empty_title': 'No matches yet',
+    'matches.empty_desc': 'Start liking people to find your match',
+    'matches.start_searching': 'Start searching',
+    'profile.years_old': 'years old',
     'user.match_score': 'Match',
     'user.from_you': 'from you',
     // Filter

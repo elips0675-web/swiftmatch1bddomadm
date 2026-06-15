@@ -140,22 +140,26 @@ export default function GroupsPage() {
   const ITEMS_PER_PAGE = 12;
   const [currentPage, setCurrentPage] = useState(1);
   const [apiGroups, setApiGroups] = useState<any[]>([]);
+  const [apiMyGroups, setApiMyGroups] = useState<any[]>([]);
   const [apiGroupsLoading, setApiGroupsLoading] = useState(true);
 
   useEffect(() => {
     const token = getToken();
     if (!token) { setApiGroupsLoading(false); return; }
-    fetch('/api/groups', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setApiGroups(data))
+    Promise.all([
+      fetch('/api/groups', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : []),
+      fetch('/api/groups/my', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : []),
+    ])
+      .then(([allGroups, myGroups]) => {
+        setApiGroups(allGroups)
+        setApiMyGroups(myGroups)
+      })
       .catch(() => {})
       .finally(() => setApiGroupsLoading(false));
   }, []);
 
   const sourceGroups = apiGroups.length > 0 ? apiGroups : GROUP_CATEGORIES;
-
-  const myGroupIds = [1, 3, 5];
-  const myGroups = sourceGroups.filter((g: any) => myGroupIds.includes(g.id));
+  const myGroups = apiMyGroups.length > 0 ? apiMyGroups : sourceGroups.filter((g: any) => [1, 3, 5].includes(g.id));
   const topGroups = sourceGroups.slice(2, 6);
   const popularGroups = sourceGroups;
 
@@ -181,7 +185,7 @@ export default function GroupsPage() {
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     if (!newGroupName.trim() || !newGroupCategory) {
       toast({
         variant: "destructive",
@@ -199,6 +203,27 @@ export default function GroupsPage() {
           description: t('groups.create.forbidden_desc'),
         });
         return;
+    }
+
+    const token = getToken()
+    if (token) {
+      try {
+        const res = await fetch('/api/groups', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ name: newGroupName, description: newGroupDesc, category_id: Number(newGroupCategory) }),
+        })
+        if (res.ok) {
+          const group = await res.json()
+          setApiGroups(prev => [{ id: group.id, name_ru: group.name_ru, name_en: group.name_en, description_ru: group.description, description_en: group.description, img: '', onlineCount: 1, members: 1 }, ...prev])
+          toast({ title: t('groups.create.success_title'), description: `${t('groups.create.success_desc_start')}${newGroupName}` })
+          setIsCreateOpen(false)
+          setNewGroupName("")
+          setNewGroupDesc("")
+          setNewGroupCategory("")
+          return
+        }
+      } catch {}
     }
 
     toast({

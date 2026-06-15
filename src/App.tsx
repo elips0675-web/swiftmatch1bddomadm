@@ -40,6 +40,7 @@ const LegalDataProcessing = lazy(() => import("./pages/legal-data-processing"))
 const LegalPrivacy = lazy(() => import("./pages/legal-privacy"))
 const LegalTerms = lazy(() => import("./pages/legal-terms"))
 const Login = lazy(() => import("./pages/login"))
+const Matches = lazy(() => import("./pages/matches"))
 const Onboarding = lazy(() => import("./pages/onboarding"))
 const Profile = lazy(() => import("./pages/profile"))
 const ProfileEdit = lazy(() => import("./pages/profile-edit"))
@@ -70,6 +71,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/profile/edit": "Редактировать — SwiftMatch",
   "/profile/attachment-test": "Тест привязанности — SwiftMatch",
   "/activity": "Активность — SwiftMatch",
+  "/matches": "Мэтчи — SwiftMatch",
   "/groups": "Группы — SwiftMatch",
   "/contest": "Конкурс — SwiftMatch",
   "/settings": "Настройки — SwiftMatch",
@@ -137,6 +139,7 @@ const App = () => (
                             <Route path="/chats/:chatId" element={<ChatId />} />
                             <Route path="/contest" element={<Contest />} />
                             <Route path="/faq" element={<Faq />} />
+                            <Route path="/matches" element={<Matches />} />
                             <Route path="/groups" element={<Groups />} />
                             <Route path="/groups/:category" element={<GroupCategory />} />
                             <Route path="/legal/data-processing" element={<LegalDataProcessing />} />

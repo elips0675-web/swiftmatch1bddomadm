@@ -4,7 +4,7 @@ import { getToken } from "@/lib/token";
 import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/navigation/bottom-nav";
 import { useLanguage } from "@/context/language-context";
-import { Trophy, Timer, Info, Crown, Maximize2, X, Award, CircleCheck as CheckCircle2, History, Medal } from "lucide-react";
+import { Trophy, Timer, Info, Crown, Maximize2, X, Award, CircleCheck as CheckCircle2, History, Medal, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +50,27 @@ export default function ContestPage() {
   const [maleEntries, setMaleEntries] = useState<any[]>([]);
   const [pastFemaleWinners, setPastFemaleWinners] = useState<any[]>([]);
   const [pastMaleWinners, setPastMaleWinners] = useState<any[]>([]);
+  const [votedEntries, setVotedEntries] = useState<Set<number>>(new Set());
+
+  const handleVote = async (entry: any) => {
+    if (votedEntries.has(entry.id)) return
+    const token = getToken()
+    if (!token) return
+    try {
+      const res = await fetch('/api/contest/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ entry_id: entry.id }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const update = (prev: any[]) => prev.map(e => e.id === entry.id ? { ...e, votes: data.votes } : e)
+        setFemaleEntries(update)
+        setMaleEntries(update)
+        setVotedEntries(prev => new Set(prev).add(entry.id))
+      }
+    } catch {}
+  }
 
   useEffect(() => {
     const updateTimer = () => {
@@ -152,7 +173,7 @@ export default function ContestPage() {
           
           <TabsContent value="female" className="mt-0 outline-none">
             <section className="mb-14 pt-24 relative">
-              <AnimatePresence mode="wait">
+                  <AnimatePresence mode="wait">
                 <motion.div key="female" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="flex justify-center items-end gap-2 sm:gap-6 relative z-10">
                   <div className="flex flex-col items-center flex-1 max-w-[120px]">
                     <div className="relative mb-3 cursor-pointer group" onClick={() => setViewerPhoto(topThree[1].photo)}>
@@ -163,7 +184,12 @@ export default function ContestPage() {
                       <div className="absolute -top-2 -right-2 w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center text-white font-black text-sm shadow-md border-2 border-white">2</div>
                     </div>
                     <p className="font-bold text-xs truncate w-full text-center">{topThree[1].userName}</p>
-                    <Badge variant="secondary" className="mt-1 bg-slate-100 text-slate-600 text-[8px] font-black">{topThree[1].votes}</Badge>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-[8px] font-black">{topThree[1].votes}</Badge>
+                      <button onClick={() => handleVote(topThree[1])} className={`p-1 rounded-full transition-all ${votedEntries.has(topThree[1].id) ? 'text-pink-500' : 'text-slate-300 hover:text-pink-400'}`}>
+                        <Heart size={12} fill={votedEntries.has(topThree[1].id) ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex flex-col items-center flex-1 max-w-[160px] -mt-12">
                     <div className="relative mb-3 cursor-pointer group" onClick={() => setViewerPhoto(topThree[0].photo)}>
@@ -175,7 +201,12 @@ export default function ContestPage() {
                       <div className="absolute -top-2 -right-2 w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-white font-black text-lg shadow-md border-2 border-white">1</div>
                     </div>
                     <p className="font-black text-sm truncate w-full text-center">{topThree[0].userName}</p>
-                    <Badge className="mt-1 gradient-bg text-white text-[10px] font-black border-0 shadow-lg shadow-primary/20 px-3">{topThree[0].votes}</Badge>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Badge className="gradient-bg text-white text-[10px] font-black border-0 shadow-lg shadow-primary/20 px-3">{topThree[0].votes}</Badge>
+                      <button onClick={() => handleVote(topThree[0])} className={`p-1 rounded-full transition-all ${votedEntries.has(topThree[0].id) ? 'text-pink-500' : 'text-slate-300 hover:text-pink-400'}`}>
+                        <Heart size={14} fill={votedEntries.has(topThree[0].id) ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex flex-col items-center flex-1 max-w-[120px]">
                     <div className="relative mb-3 cursor-pointer group" onClick={() => setViewerPhoto(topThree[2].photo)}>
@@ -186,7 +217,12 @@ export default function ContestPage() {
                       <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-700/60 rounded-full flex items-center justify-center text-white font-black text-sm shadow-md border-2 border-white">3</div>
                     </div>
                     <p className="font-bold text-xs truncate w-full text-center">{topThree[2].userName}</p>
-                    <Badge variant="secondary" className="mt-1 bg-amber-50 text-amber-700 text-[8px] font-black">{topThree[2].votes}</Badge>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Badge variant="secondary" className="bg-amber-50 text-amber-700 text-[8px] font-black">{topThree[2].votes}</Badge>
+                      <button onClick={() => handleVote(topThree[2])} className={`p-1 rounded-full transition-all ${votedEntries.has(topThree[2].id) ? 'text-pink-500' : 'text-slate-300 hover:text-pink-400'}`}>
+                        <Heart size={12} fill={votedEntries.has(topThree[2].id) ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               </AnimatePresence>
@@ -206,7 +242,12 @@ export default function ContestPage() {
                       <div className="absolute -top-2 -right-2 w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center text-white font-black text-sm shadow-md border-2 border-white">2</div>
                     </div>
                     <p className="font-bold text-xs truncate w-full text-center">{topThree[1].userName}</p>
-                    <Badge variant="secondary" className="mt-1 bg-slate-100 text-slate-600 text-[8px] font-black">{topThree[1].votes}</Badge>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 text-[8px] font-black">{topThree[1].votes}</Badge>
+                      <button onClick={() => handleVote(topThree[1])} className={`p-1 rounded-full transition-all ${votedEntries.has(topThree[1].id) ? 'text-pink-500' : 'text-slate-300 hover:text-pink-400'}`}>
+                        <Heart size={12} fill={votedEntries.has(topThree[1].id) ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex flex-col items-center flex-1 max-w-[160px] -mt-12">
                     <div className="relative mb-3 cursor-pointer group" onClick={() => setViewerPhoto(topThree[0].photo)}>
@@ -218,7 +259,12 @@ export default function ContestPage() {
                       <div className="absolute -top-2 -right-2 w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-white font-black text-lg shadow-md border-2 border-white">1</div>
                     </div>
                     <p className="font-black text-sm truncate w-full text-center">{topThree[0].userName}</p>
-                    <Badge className="mt-1 gradient-bg text-white text-[10px] font-black border-0 shadow-lg shadow-primary/20 px-3">{topThree[0].votes}</Badge>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Badge className="gradient-bg text-white text-[10px] font-black border-0 shadow-lg shadow-primary/20 px-3">{topThree[0].votes}</Badge>
+                      <button onClick={() => handleVote(topThree[0])} className={`p-1 rounded-full transition-all ${votedEntries.has(topThree[0].id) ? 'text-pink-500' : 'text-slate-300 hover:text-pink-400'}`}>
+                        <Heart size={14} fill={votedEntries.has(topThree[0].id) ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex flex-col items-center flex-1 max-w-[120px]">
                     <div className="relative mb-3 cursor-pointer group" onClick={() => setViewerPhoto(topThree[2].photo)}>
@@ -229,7 +275,12 @@ export default function ContestPage() {
                       <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-700/60 rounded-full flex items-center justify-center text-white font-black text-sm shadow-md border-2 border-white">3</div>
                     </div>
                     <p className="font-bold text-xs truncate w-full text-center">{topThree[2].userName}</p>
-                    <Badge variant="secondary" className="mt-1 bg-amber-50 text-amber-700 text-[8px] font-black">{topThree[2].votes}</Badge>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Badge variant="secondary" className="bg-amber-50 text-amber-700 text-[8px] font-black">{topThree[2].votes}</Badge>
+                      <button onClick={() => handleVote(topThree[2])} className={`p-1 rounded-full transition-all ${votedEntries.has(topThree[2].id) ? 'text-pink-500' : 'text-slate-300 hover:text-pink-400'}`}>
+                        <Heart size={12} fill={votedEntries.has(topThree[2].id) ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               </AnimatePresence>
