@@ -1,31 +1,18 @@
 === СТАТУС ПРОЕКТА ПО ФАЗАМ ===
 
 🔴 Фаза 1 — Core User Flow ✅
-  1. profile-edit: /api/profile/me + Bearer-токен               ✅
-  2. server: PUT /api/profile/me с auth middleware              ✅
-  3. user.tsx: handleLike → POST /api/likes                     ✅
-  4. user.tsx: при мэтче POST /api/chats                        ✅
-  5. Photo upload: FormData → /api/upload                       ✅
-  6. Auth middleware на /api/profile/me                          ✅
-  7. onboarding: MySQL API + fallback localStorage               ✅
-  8. register: сохраняет токен, /onboarding                      ✅
+  1-8: Регистрация → анкета → лайки → мэтч → чат              8/8
 
 🟠 Фаза 2 — Social Features ✅
-  9. /matches страница + GET /api/matches + навигация            ✅
- 10. /premium: GET tiers, /my, POST purchase                     ✅
- 11. Groups: POST /api/groups + UI                               ✅
- 12. Groups: POST /api/groups/:id/join + GET /api/groups/my      ✅
- 13. Contest: POST /api/contest/vote + сердечко на подиуме       ✅
- 14. Online status: WS user:online/offline + зелёная точка       ✅
- 15. Typing: WS chat:typing + индикатор в чате                   ✅
+  9-15: Мэтчи, премиум, группы, конкурс, онлайн, typing       7/7
 
-🟡 Фаза 3 — Admin & Moderation ⬜
- 16. Email-рассылки (SendGrid/Resend)
- 17. Push-уведомления (FCM/VAPID)
- 18. Бан пользователя + разлогин
- 19. Real-time модерация слов
- 20. История действий в админке
- 21. Имперсонация
+🟡 Фаза 3 — Admin & Moderation ✅
+ 16. Email-рассылки (nodemailer/SMTP)                          ✅
+ 17. Push-уведомления (FCM/VAPID)                              ⬜
+ 18. Бан + WS user:banned (разлогин)                           ✅
+ 19. Запрещённые слова в чатах (REST + WS)                     ✅
+ 20. История действий (activity_log) в карточке юзера           ✅
+ 21. Имперсонация (endpoint + кнопка Login as User)            ✅
 
 🟢 Фаза 4 — Monetization ⬜
  22. Платёжный шлюз (Stripe/CloudPayments/ЮKassa)
@@ -38,10 +25,23 @@
  27. AI-рекомендации
  28. Сохранение attachment-теста
  29. Удаление сообщений
- 30. Системные уведомления
+ 30. Системные уведомления (Service Worker)
+
+=== ПРОГРЕСС ===
+Сервер:    ██████████████████  98% (все роуты работают)
+Фронтенд:  ████████████████░░  85% (27/32 страниц)
+UI/UX:     ████████████████░░  85%
+Админка:   ██████████████████  95%
+Реальность:██████████████░░░░  75% (всё кроме платежей и пуша)
 
 === ТЕКУЩИЙ КОММИТ ===
-54841fa — Phase 2: Social Features (matches, groups, contest, premium)
+988b546 — Phase 3: Admin & Moderation
+
+=== .env для рассылок (опционально) ===
+SMTP_HOST=smtp.mail.ru
+SMTP_PORT=465
+SMTP_USER=your@mail.ru
+SMTP_PASS=your-password
 
 === ЗАПУСК ===
 запуск-всего.bat → MySQL + API (3001) + Frontend (8081)

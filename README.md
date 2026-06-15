@@ -77,16 +77,16 @@ npx vite --port 8081 --host
 | 14 | Онлайн-статус — зелёная точка в чатах (WebSocket `user:online/offline`) | ✅ |
 | 15 | Typing indicator — «печатает…» в чатах (WebSocket `chat:typing`) | ✅ |
 
-### 🟡 Фаза 3 — Admin & Moderation (очередь)
+### 🟡 Фаза 3 — Admin & Moderation ✅
 
 | # | Что | Статус |
 |---|---|---|
-| 16 | Email-рассылки через SendGrid/Resend | ⬜ |
+| 16 | Email-рассылки — `POST /campaigns` реально шлёт письма через nodemailer/SMTP | ✅ |
 | 17 | Push-уведомления (FCM/VAPID, Service Worker) | ⬜ |
-| 18 | Бан пользователя из админки + разлогин | ⬜ |
-| 19 | Real-time модерация запрещённых слов в чатах | ⬜ |
-| 20 | История действий пользователя (`activity_log`) в админке | ⬜ |
-| 21 | Имперсонация (войти как пользователь из админки) | ⬜ |
+| 18 | Бан пользователя + WS `user:banned` (разлогин забаненного) | ✅ |
+| 19 | Real-time модерация запрещённых слов в чатах (REST + WS) | ✅ |
+| 20 | История действий (`activity_log`) в админке (вкладка в карточке юзера) | ✅ |
+| 21 | Имперсонация — `POST /users/:id/impersonate` + кнопка «Login as User» | ✅ |
 
 ### 🟢 Фаза 4 — Monetization (очередь)
 
@@ -110,6 +110,18 @@ npx vite --port 8081 --host
 ---
 
 ## Ченджлог
+
+### Фаза 3 — Admin & Moderation ✅ (`988b546`)
+- Banned words: новый хелпер `server/src/banned-words.js` (кэширование 60s)
+- Banned words: проверка в `POST /api/chats/:chatId/messages` + в WebSocket `chat:message`
+- Banned words: при нарушении WS шлёт `chat:error`, REST → 403
+- Email: `nodemailer` в зависимостях; `sendEmails()` рассылает через SMTP (из .env)
+- Email: `POST /api/admin/campaigns` реально отправляет письма + трекает `delivered`
+- Activity: `GET /api/admin/users/:id/activity` — логи `activity_log` для юзера
+- Activity: вкладка «Activity» в карточке пользователя админки
+- Impersonation: `POST /api/admin/users/:id/impersonate` (1h JWT с `impersonator`)
+- Impersonation: кнопка «Login as User» в меню и «Login» в карточке
+- Ban: при бане WS шлёт `user:banned` — принудительный разлогин
 
 ### Фаза 2 — Social Features ✅ (`54841fa`)
 - Страница `/matches` (matches.tsx): `GET /api/matches`, пустое состояние, навигация
