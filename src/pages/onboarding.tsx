@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/context/language-context";
 import { CIRCADIAN_RHYTHM_OPTIONS } from "@/lib/constants";
 import { useContentConfig } from "@/lib/useContentConfig";
+import { getToken } from "@/lib/token";
 
 const GENDER_OPTIONS = [
   { id: 'male', labelKey: 'onboarding.step1.male' },
@@ -162,15 +163,59 @@ export default function OnboardingPage() {
   };
 
   const handleFinish = async () => {
+    const savedLocally = () => {
+      localStorage.setItem('userProfile', JSON.stringify({
+        displayName: formData.name,
+        age: Number(formData.age) || 18,
+        city: formData.city,
+        height: Number(formData.height) || 0,
+        gender: formData.gender,
+        lookingFor: formData.lookingFor,
+        datingGoal: formData.datingGoal,
+        zodiac: formData.zodiac,
+        circadian: formData.circadian,
+        bio: formData.bio,
+        interests: formData.interests,
+        photo: formData.photo,
+      }))
+      toast({ title: t('onboarding.toast.finish_title'), description: t('onboarding.toast.finish_desc') })
+      router.push("/")
+    }
+
+    const token = getToken()
+    if (token) {
+      try {
+        await fetch('/api/profile/me', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            display_name: formData.name,
+            name: formData.name,
+            age: Number(formData.age) || 18,
+            city: formData.city,
+            height: Number(formData.height) || 0,
+            gender: formData.gender,
+            looking_for: formData.lookingFor,
+            dating_goal: formData.datingGoal,
+            zodiac: formData.zodiac,
+            circadian: formData.circadian,
+            bio: formData.bio,
+          }),
+        })
+        savedLocally()
+        return
+      } catch {}
+    }
+
     if (!supabase) {
-        router.push('/login');
-        return;
+      savedLocally()
+      return
     }
 
     try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
-          router.push('/login');
+          savedLocally()
           return
         }
         const { error } = await supabase

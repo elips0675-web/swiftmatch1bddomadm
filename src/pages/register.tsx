@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import Link from "@/shims/next-link";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/context/language-context";
+import { setToken } from "@/lib/token";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -65,11 +66,12 @@ export default function RegisterPage() {
         const data = await response.json();
 
         if (response.ok) {
+            setToken(data.token);
             toast({
                 title: t('common.success'),
                 description: t('register.account_created'),
             });
-            router.push('/login'); // Перенаправляем на страницу входа
+            router.push('/onboarding');
         } else {
             toast({
                 title: t('register.registration_error'),

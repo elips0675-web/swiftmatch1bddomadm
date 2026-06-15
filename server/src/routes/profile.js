@@ -129,7 +129,7 @@ router.get('/api/users/:id', async (req, res) => {
   }
 })
 
-router.put('/api/profile/:id', async (req, res) => {
+router.put('/api/profile/me', auth, async (req, res) => {
   try {
     const { display_name, name, age, bio, gender, looking_for, dating_goal, height, city, country, zodiac, circadian, attachment_style, education, interests } = req.body
 
@@ -150,17 +150,17 @@ router.put('/api/profile/:id', async (req, res) => {
         attachment_style = COALESCE(?, attachment_style),
         education = COALESCE(?, education)
       WHERE id = ?`,
-      [display_name, name, age, bio, gender, looking_for, dating_goal, height, city, country, zodiac, circadian, attachment_style, education, req.params.id],
+      [display_name, name, age, bio, gender, looking_for, dating_goal, height, city, country, zodiac, circadian, attachment_style, education, req.userId],
     )
 
     if (interests && Array.isArray(interests)) {
-      await pool.query('DELETE FROM user_interests WHERE user_id = ?', [req.params.id])
+      await pool.query('DELETE FROM user_interests WHERE user_id = ?', [req.userId])
       for (const interestId of interests) {
-        await pool.query('INSERT IGNORE INTO user_interests (user_id, interest_id) VALUES (?, ?)', [req.params.id, interestId])
+        await pool.query('INSERT IGNORE INTO user_interests (user_id, interest_id) VALUES (?, ?)', [req.userId, interestId])
       }
     }
 
-    const [rows] = await pool.query('SELECT * FROM user_profiles WHERE id = ?', [req.params.id])
+    const [rows] = await pool.query('SELECT * FROM user_profiles WHERE id = ?', [req.userId])
     res.json(rows[0])
   } catch (err) {
     console.error('Profile PUT error:', err)

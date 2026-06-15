@@ -23,8 +23,15 @@ import { ZODIAC_SIGNS } from "@/lib/constants";
 import { useContentConfig } from "@/lib/useContentConfig";
 import { useLanguage } from "@/context/language-context";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { getToken } from "@/lib/token";
 
 const BANNED_WORDS = ["Хуй"];
+
+function getUserId(): number | null {
+  const token = getToken()
+  if (!token) return null
+  try { return JSON.parse(atob(token.split('.')[1])).userId } catch { return null }
+}
 
 const INTEREST_KEY_TO_ID: Record<string, number> = {
   'interest.sport': 1, 'interest.music': 2, 'interest.movies': 3, 'interest.books': 4,
@@ -36,9 +43,6 @@ const INTEREST_KEY_TO_ID: Record<string, number> = {
   'interest.science': 22, 'interest.history': 23, 'interest.architecture': 24,
   'interest.pets': 25,
 };
-
-const PROFILE_API = '/api/profile'
-const DEMO_USER_ID = 2
 
 const DEFAULT_PROFILE = {
   displayName: "Анна",
@@ -136,12 +140,16 @@ export default function EditProfilePage() {
 
   useEffect(() => {
     (async () => {
+      const token = getToken()
+      const headers: Record<string, string> = {}
+      if (token) headers['Authorization'] = `Bearer ${token}`
       try {
-        const res = await fetch(`${PROFILE_API}/${DEMO_USER_ID}`)
+        const res = await fetch('/api/profile/me', { headers })
         if (res.ok) {
           const data = await res.json()
+          const mapped = mapDbProfile(data)
           const photoUrls = (data.photos || []).map((ph: any) => ph.url)
-          setProfile(mapDbProfile(data))
+          setProfile(mapped)
           if (photoUrls.length > 0) setPhotos(photoUrls)
           else {
             const saved = localStorage.getItem('userProfileGallery')
@@ -199,11 +207,12 @@ export default function EditProfilePage() {
       const updated = [...photos, previewUrl];
       setPhotos(updated);
 
-      const formData = new FormData()
-      formData.append('photo', file)
-      formData.append('user_id', String(DEMO_USER_ID))
-      formData.append('sort_order', String(photos.length))
-      fetch('/api/upload', { method: 'POST', body: formData }).catch(() => {})
+      const uploadFormData = new FormData()
+      uploadFormData.append('photo', file)
+      const uid = getUserId()
+      if (uid) uploadFormData.append('user_id', String(uid))
+      uploadFormData.append('sort_order', String(photos.length))
+      fetch('/api/upload', { method: 'POST', body: uploadFormData }).catch(() => {})
 
       const reader = new FileReader();
       reader.onload = () => {
@@ -267,13 +276,17 @@ export default function EditProfilePage() {
     localStorage.setItem('userProfileGallery', JSON.stringify(photos.filter(p => !p.startsWith('blob:'))));
 
     try {
+      const token = getToken()
       const interestIds = (profile.interests || [])
         .map((key: string) => INTEREST_KEY_TO_ID[key])
         .filter(Boolean)
 
-      await fetch(`${PROFILE_API}/${DEMO_USER_ID}`, {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
+      await fetch('/api/profile/me', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           display_name: profile.displayName,
           name: profile.displayName,

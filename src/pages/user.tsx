@@ -125,10 +125,32 @@ function UserProfileContent() {
 
   const earnedTitles = useMemo(() => getUserTitles(user, language), [user, language]);
 
-  const handleLike = () => {
-    toast({ title: t('toast.you_liked', { name: user.name }) });
-    if (Math.random() > 0.7) {
-      setMatchUser(user);
+  const handleLike = async () => {
+    const token = getToken()
+    if (!token) {
+      toast({ variant: 'destructive', title: t('auth.login_required') })
+      return
+    }
+    try {
+      const res = await fetch('/api/likes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ liked_user_id: user.id, type: 'like' }),
+      })
+      const data = await res.json()
+      if (data.matched) {
+        await fetch('/api/chats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ participant_id: user.id }),
+        }).catch(() => {})
+        setMatchUser(user)
+        toast({ title: t('toast.you_liked', { name: user.name }), description: t('match.title') })
+      } else {
+        toast({ title: t('toast.you_liked', { name: user.name }) })
+      }
+    } catch {
+      toast({ variant: 'destructive', title: t('auth.network_error') })
     }
   };
 
